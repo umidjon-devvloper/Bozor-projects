@@ -1,0 +1,31 @@
+{
+  "name": "@bozorlar/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/main.js",
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "node --watch --experimental-strip-types src/main.ts",
+    "start": "node dist/main.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@bozorlar/config": "workspace:*",
+    "@bozorlar/domain": "workspace:*",
+    "@bozorlar/ledger": "workspace:*",
+    "@bozorlar/logger": "workspace:*",
+    "@bozorlar/notifications": "workspace:*",
+    "@bozorlar/search": "workspace:*",
+    "@bozorlar/storage": "workspace:*",
+    "@bozorlar/types": "workspace:*",
+    "ioredis": "^5.4.1",
+    "mongoose": "^8.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.5",
+    "vitest": "^2.1.2"
+  }
+}

@@ -1,0 +1,92 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: bz-mongo
+    # A replica set is required even in local development. Transactions do not work on a
+    # standalone mongod, and every money path in this system is transactional (ADR-0001).
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    ports: ["27017:27017"]
+    volumes: ["mongo-data:/data/db"]
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mongo-init:
+    image: mongo:7
+    depends_on: { mongo: { condition: service_healthy } }
+    restart: "no"
+    entrypoint:
+      - bash
+      - -c
+      - |
+        mongosh --host mongo:27017 --quiet --eval '
+          try { rs.status().ok }
+          catch (e) { rs.initiate({_id:"rs0",members:[{_id:0,host:"localhost:27017"}]}) }
+        '
+
+  redis:
+    image: redis:7-alpine
+    container_name: bz-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports: ["6379:6379"]
+    volumes: ["redis-data:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  typesense:
+    image: typesense/typesense:27.1
+    container_name: bz-typesense
+    command: ["--data-dir", "/data", "--api-key", "dev-typesense-key", "--enable-cors"]
+    ports: ["8108:8108"]
+    volumes: ["typesense-data:/data"]
+
+  minio:
+    image: minio/minio:latest
+    container_name: bz-minio
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: bozorlar
+      MINIO_ROOT_PASSWORD: bozorlar-dev-secret
+    ports: ["9000:9000", "9001:9001"]
+    volumes: ["minio-data:/data"]
+
+  clamav:
+    image: clamav/clamav:1.4
+    container_name: bz-clamav
+    ports: ["3310:3310"]
+    volumes: ["clamav-db:/var/lib/clamav"]
+    healthcheck:
+      # The first start downloads signature databases and takes a few minutes; until clamd
+      # answers PING the API rejects uploads rather than accepting unscanned files.
+      test: ["CMD", "clamdcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 20
+      start_period: 300s
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on: [minio]
+    restart: "no"
+    entrypoint:
+      - sh
+      - -c
+      - |
+        until mc alias set local http://minio:9000 bozorlar bozorlar-dev-secret; do sleep 2; done
+        mc mb --ignore-existing local/bozorlar-public
+        mc mb --ignore-existing local/bozorlar-private
+        mc mb --ignore-existing local/bozorlar-temp
+        mc anonymous set download local/bozorlar-public
+        mc ilm rule add --expire-days 1 local/bozorlar-temp || true
+
+volumes:
+  mongo-data: {}
+  clamav-db: {}
+  redis-data: {}
+  typesense-data: {}
+  minio-data: {}
