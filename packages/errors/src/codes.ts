@@ -76,6 +76,10 @@ export const ErrorCode = {
   REVIEW_ALREADY_EXISTS: 'REVIEW_ALREADY_EXISTS',
   REVIEW_ALREADY_REPLIED: 'REVIEW_ALREADY_REPLIED',
 
+  // Favourites
+  FAVOURITE_LIMIT_REACHED: 'FAVOURITE_LIMIT_REACHED',
+  FAVOURITE_TARGET_NOT_FOUND: 'FAVOURITE_TARGET_NOT_FOUND',
+
   // Search
   SEARCH_UNAVAILABLE: 'SEARCH_UNAVAILABLE',
   SEARCH_COLLECTION_MISSING: 'SEARCH_COLLECTION_MISSING',
@@ -198,6 +202,8 @@ export const ERROR_STATUS: Record<ErrorCode, number> = {
   REVIEW_WINDOW_CLOSED: 410,
   REVIEW_ALREADY_EXISTS: 409,
   REVIEW_ALREADY_REPLIED: 409,
+  FAVOURITE_LIMIT_REACHED: 409,
+  FAVOURITE_TARGET_NOT_FOUND: 404,
   SEARCH_UNAVAILABLE: 503,
   SEARCH_COLLECTION_MISSING: 503,
   NOTIFICATION_TEMPLATE_INVALID: 500,
@@ -260,6 +266,8 @@ export const ERROR_TITLE: Partial<Record<ErrorCode, string>> = {
   DISPUTE_SETTLEMENT_UNSUPPORTED: 'This order cannot be settled automatically yet',
   REVIEW_NOT_ELIGIBLE: 'You cannot review this yet',
   REVIEW_WINDOW_CLOSED: 'The review window has closed',
+  FAVOURITE_LIMIT_REACHED: 'You have reached the maximum number of favourites',
+  FAVOURITE_TARGET_NOT_FOUND: 'That item cannot be added to favourites',
   SEARCH_UNAVAILABLE: 'Search is temporarily unavailable',
   SYSTEM_INTERNAL_ERROR: 'Internal server error',
   ORDER_INVALID_TRANSITION: 'Order cannot move to that state',

@@ -68,6 +68,12 @@ import {
 } from './modules/search/index.js';
 import { createIndexer, createSearchService, createTypesenseClient } from '@bozorlar/search';
 import {
+  createFavouriteController,
+  createFavouriteRouter,
+  createFavouriteService,
+  createSellerFavouriteRouter,
+} from './modules/favourites/index.js';
+import {
   createPublicReviewRouter,
   createReviewAdminRouter,
   createReviewController,
@@ -285,6 +291,14 @@ export function createApp({ logger, redis }: AppDependencies): Express {
   });
   const reviewController = createReviewController(reviewService);
 
+  // favourites
+  const favouriteService = createFavouriteService({
+    products: productService,
+    shops: shopService,
+    logger,
+  });
+  const favouriteController = createFavouriteController(favouriteService);
+
   // disputes
   const disputeService = createDisputeService({
     orders: orderDisputeWriter,
@@ -322,6 +336,8 @@ export function createApp({ logger, redis }: AppDependencies): Express {
   app.use('/api/v1/seller/wallet', createSellerWalletRouter(walletController, requireAuth));
   app.use('/api/v1', createPublicReviewRouter(reviewController));
   app.use('/api/v1/reviews', createReviewRouter(reviewController, requireAuth));
+  app.use('/api/v1/favourites', createFavouriteRouter(favouriteController, requireAuth));
+  app.use('/api/v1/seller', createSellerFavouriteRouter(favouriteController, requireAuth));
   app.use('/api/v1/disputes', createDisputeRouter(disputeController, requireAuth));
   app.use('/api/v1/seller/disputes', createSellerDisputeRouter(disputeController, requireAuth));
   app.use('/api/v1/admin', createDisputeAdminRouter(disputeController, requireAuth));

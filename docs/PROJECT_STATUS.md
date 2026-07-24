@@ -327,10 +327,31 @@ was written, tested and waiting for a caller.
 - Evidence goes to the private bucket and is fetched through the audited media endpoint; the
   dispute response returns keys, never public URLs.
 
+### Favourites — wishlist, restock and price-drop alerts ✅
+The last unblocked module in the buyer journey, and the writer `products.favoriteCount` has
+been waiting for since Phase 3.
+- **Alerts are decided from a stored per-favourite watermark, never from the event payload**
+  (ADR-0034). The outbox delivers at least once and in no order; a drop computed from the
+  event's own `from`/`to` notifies everybody twice on the first redelivery.
+- **The state advances by compare-and-set, before the notification is sent.** ADR-0032's
+  mechanism applied again. A crash costs a missed alert rather than a duplicate one.
+- **The watermark follows the price upward**, so one seasonal fall does not exhaust the alert.
+- **Seller availability is the existing visibility rule.** A deactivated seller's stall goes
+  quiet through `computeProductVisibility`; the restock edge fires when they top up.
+- **The first two MARKETING templates**, opt-outable and quiet-hours-respecting, never on SMS.
+- Adding a favourite is an upsert; a repeat tap cannot reset a watermark.
+- A drop must clear both a 5% and a 1 000 som floor; a 24-hour cooldown bounds both alert kinds.
+
 ## Verified
-- **The entire API source — foundation, identity, and geo — typechecks clean** under
-  `strict`, `noUncheckedIndexedAccess`, and `exactOptionalPropertyTypes`
-- Unit suites: **38/38 passing** (money 12, visibility 8, working hours 6, crypto 7, slug 5)
+- **The entire workspace typechecks clean** under `strict`, `noUncheckedIndexedAccess` and
+  `exactOptionalPropertyTypes` — 28/28 turbo tasks
+- Unit suites: **301/301 passing** (282 in `apps/api`, 12 money, 7 errors)
+- Build: 15/15 turbo tasks
+- Integration suites are **not** run in CI yet; they require Docker for the MongoDB replica set
+
+> The sections below this point drifted out of date during the module sequence and were only
+> partially repaired during the 2026-07-25 recovery. The per-module entries above are accurate;
+> `CHANGELOG.md` is the reliable record. A full pass over the remainder is outstanding.
 
 ## Not yet started
 | Module | Phase |
@@ -366,7 +387,12 @@ was written, tested and waiting for a caller.
   are a re-run.
 
 ## Next step
-**Phase 3 — Catalog:** categories with materialized `ancestors` paths, units, products with
+**Payments (Payme / Click) remains the only blocked module**, on B5 — signed merchant contracts
+and sandbox credentials. Unblocked candidates: admin reporting over data every module already
+writes, and running the integration suites on a Docker host, which is the largest untested
+surface in the backend.
+
+Superseded, retained for history — **Phase 3 — Catalog:** categories with materialized `ancestors` paths, units, products with
 integer milli-unit quantities, the media pipeline, moderation queue, price history, bulk
 import. Not blocked by B1–B8.
 

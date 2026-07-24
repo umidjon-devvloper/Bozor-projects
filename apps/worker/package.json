@@ -15,6 +15,7 @@
   "dependencies": {
     "@bozorlar/config": "workspace:*",
     "@bozorlar/domain": "workspace:*",
+    "@bozorlar/favourites": "workspace:*",
     "@bozorlar/ledger": "workspace:*",
     "@bozorlar/logger": "workspace:*",
     "@bozorlar/notifications": "workspace:*",

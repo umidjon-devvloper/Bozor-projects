@@ -603,3 +603,61 @@ optional partial amount, rounded down so a reversal can never exceed the origina
   dispute response carries keys, never public URLs.
 
 No production bug found this round.
+
+---
+
+# 2026-07-25 — Favourites (wishlist, restock and price-drop alerts)
+
+One module, complete. A new shared package, 6 API module files, 1 worker handler, 1 contracts
+schema set, 1 migration, 2 notification templates, 24 new unit tests. Build 15/15, typecheck
+28/28, **301 tests passing**.
+
+**The interesting problem was not storage, it was idempotency.** Alerts ride on
+`product.price_changed` and `product.stock_changed`, which arrive at least once and in no
+guaranteed order. Computing a drop from the event's own `from`/`to` is the obvious
+implementation and notifies everybody twice the first time an event is redelivered. **ADR-0034**
+records the alternative: every favourite stores the price its owner has already been shown and
+whether it was last seen buyable, the decision is taken against that row and the product's
+current state in the database, and the row advances by compare-and-set — ADR-0032's mechanism
+applied to a second problem. A redelivery decides the same thing, fails to advance, and sends
+nothing.
+
+**State moves before the notification is sent.** A crash between the two costs one missed alert
+instead of a duplicate. A missed price drop is a disappointment; a repeated one at midnight is
+why people turn notifications off.
+
+**The watermark follows the price upward**, so a product followed at 10 000 som and now
+regularly 30 000 can still produce a drop. Anchoring to the favouriting price would exhaust the
+alert after one seasonal fall.
+
+**Seller availability is the existing visibility rule, not a new one.** A deactivated seller's
+shop goes invisible, the cascade materialises that onto every product, and every favourite goes
+quiet through `computeProductVisibility` — the same function the catalogue and search call.
+When the seller tops up, the restock edge fires naturally. There is deliberately no "your seller
+is back" notification: what the buyer followed was the tomatoes.
+
+**`products.favoriteCount` finally has its writer** — read by the catalogue mapper and displayed
+on every product card since Phase 3, written by nothing. It now moves in the same transaction as
+the favourite row and its outbox event, so a public counter cannot drift from the data it counts.
+
+**The first two MARKETING templates**, which tripped a tripwire the notifications module left
+behind: a test asserting that no marketing template existed, so nobody could introduce a
+silently opt-outable message by accident. It did its job. The assertion now pins the new intent
+— marketing templates are exactly these two, they stay opt-outable, they respect quiet hours,
+and they never go to SMS — and a third will trip it again.
+
+**Smaller calls:**
+- Adding a favourite is an upsert, not an insert. Tapping a heart twice on a slow connection is
+  normal behaviour, and `$setOnInsert` means a second tap can never reset somebody's watermark.
+- A price drop must clear both a proportional floor (5%) and an absolute one (1 000 som). Half
+  off a bunch of herbs is proportionally huge and absolutely trivial.
+- A 24-hour cooldown per favourite per alert kind, so oscillating prices and stock that flickers
+  as reservations expire cannot become a stream of notifications.
+- The fan-out is paged. A product followed by fifty thousand people is not one unbounded query.
+- An archived product stays in the buyer's list as an unavailable card rather than vanishing.
+  Silently removing rows from somebody's own list is more confusing than explaining them.
+- No public favourites endpoint. Who follows what is not a fact the platform publishes.
+
+**Not verified:** the integration path. The alert policy is pure and covered from both
+directions, but the fan-out's paging and the compare-and-set have been reasoned about rather
+than executed — `pnpm --filter @bozorlar/api test:int` needs Docker for the replica set.

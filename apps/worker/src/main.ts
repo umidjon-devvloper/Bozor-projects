@@ -13,6 +13,7 @@ import { createOrderCompletedHandler } from './handlers/orderCompletedHandler.js
 import { createSellerWalletHandler } from './handlers/sellerWalletHandler.js';
 import { registerNotificationHandlers } from './handlers/notificationHandlers.js';
 import { registerSearchIndexHandlers } from './handlers/searchIndexHandlers.js';
+import { registerFavouriteAlertHandlers } from './handlers/favouriteAlertHandlers.js';
 import { createIndexer, createTypesenseClient } from '@bozorlar/search';
 import {
   createConfiguredProviders,
@@ -80,6 +81,11 @@ async function bootstrap(): Promise<void> {
     logger.error({ err: error }, 'could not prepare search collections');
   });
   registerSearchIndexHandlers((type, handler) => dispatcher.on(type, handler), searchIndexer, logger);
+
+  // Favourites listen to the same catalogue events. Registered after search so that a product
+  // is already indexed by the time somebody is told it is back — a notification that leads to
+  // a search result that does not exist yet is worse than one that arrives a moment later.
+  registerFavouriteAlertHandlers((type, handler) => dispatcher.on(type, handler), delivery, logger);
 
   const relay = createOutboxRelay(logger, dispatcher);
   const sweeper = createVisibilitySweeper(redis, logger);

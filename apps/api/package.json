@@ -22,6 +22,7 @@
     "@bozorlar/contracts": "workspace:*",
     "@bozorlar/domain": "workspace:*",
     "@bozorlar/errors": "workspace:*",
+    "@bozorlar/favourites": "workspace:*",
     "@bozorlar/ledger": "workspace:*",
     "@bozorlar/logger": "workspace:*",
     "@bozorlar/money": "workspace:*",

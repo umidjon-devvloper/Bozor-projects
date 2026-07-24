@@ -101,8 +101,30 @@ describe('opt-out policy', () => {
     expect(TRANSACTIONAL_CATEGORIES).not.toContain(NotificationCategory.MARKETING);
   });
 
-  it('has no marketing templates yet, so nothing is silently opt-out today', () => {
-    expect(TEMPLATES.every((template) => template.category !== NotificationCategory.MARKETING)).toBe(true);
+  /**
+   * This assertion previously read "there are no marketing templates yet". The favourites
+   * module introduced the first two, which is a deliberate behavioural change rather than an
+   * oversight: a restock or price-drop alert is not part of the service somebody signed up
+   * for, so it must be switchable off and must respect quiet hours. The test now pins that
+   * intent rather than the absence, and a third marketing template will trip it again — which
+   * is the point.
+   */
+  it('keeps every marketing template opt-outable, and names the ones that exist', () => {
+    const marketing = TEMPLATES.filter(
+      (template) => template.category === NotificationCategory.MARKETING,
+    ).map((template) => template.type);
+
+    expect(marketing).toEqual(['favourite.restocked', 'favourite.price_dropped']);
+    expect(TRANSACTIONAL_CATEGORIES).not.toContain(NotificationCategory.MARKETING);
+  });
+
+  it('never puts a favourite alert on SMS', () => {
+    // A price alert is not worth the cost of a message, nor the intrusion of one.
+    const favouriteTemplates = TEMPLATES.filter((template) => template.type.startsWith('favourite.'));
+    expect(favouriteTemplates).toHaveLength(2);
+    for (const template of favouriteTemplates) {
+      expect(template.channels).not.toContain('SMS');
+    }
   });
 });
 

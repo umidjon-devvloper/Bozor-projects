@@ -62,6 +62,9 @@ importers:
       '@bozorlar/errors':
         specifier: workspace:*
         version: link:../../packages/errors
+      '@bozorlar/favourites':
+        specifier: workspace:*
+        version: link:../../packages/favourites
       '@bozorlar/ledger':
         specifier: workspace:*
         version: link:../../packages/ledger
@@ -177,6 +180,9 @@ importers:
       '@bozorlar/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@bozorlar/favourites':
+        specifier: workspace:*
+        version: link:../../packages/favourites
       '@bozorlar/ledger':
         specifier: workspace:*
         version: link:../../packages/ledger
@@ -238,6 +244,24 @@ importers:
       vitest:
         specifier: ^2.1.2
         version: 2.1.9(@types/node@22.20.1)
+
+  packages/favourites:
+    dependencies:
+      '@bozorlar/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@bozorlar/errors':
+        specifier: workspace:*
+        version: link:../errors
+      '@bozorlar/money':
+        specifier: workspace:*
+        version: link:../money
+      '@bozorlar/types':
+        specifier: workspace:*
+        version: link:../types
+      mongoose:
+        specifier: ^8.7.0
+        version: 8.24.1
 
   packages/ledger:
     dependencies:

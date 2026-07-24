@@ -693,3 +693,57 @@ marketplace that discovers the fact from its bank statement.
 B3 unblocks is *entering* the rate, not writing the software. Any order completed before a
 rule exists sits in `FAILED` until an operator resolves it, which is visible in the pending
 commission index rather than lost.
+
+---
+
+## ADR-0034 — Favourite alerts are decided from a stored watermark, not from the event
+
+**Status.** Accepted, 2026-07-25. Supersedes nothing; extends ADR-0012 and reuses ADR-0032.
+
+**Context.** Restock and price-drop alerts are driven by `product.stock_changed` and
+`product.price_changed`, which arrive through the transactional outbox. The outbox guarantees
+at-least-once delivery and nothing about ordering (ADR-0012). Both events carry enough
+information to compute an alert directly — the price event carries `from` and `to` — and doing
+so is the obvious implementation.
+
+It is also wrong in two ways that only appear in production. A redelivered event recomputes the
+same transition and notifies everybody a second time. Two edits delivered out of order compute
+a fall from a price that was never the current one. Neither failure is visible in a test that
+delivers each event once in order, and both are visible to users immediately.
+
+**Decision 1 — Every favourite stores its own alert state.** A `priceWatermarkMinor` (the price
+that user has already been shown) and a `wasPurchasable` flag (what the last pass observed).
+The decision compares the product as the database currently reports it against that row, and
+never reads the event payload. The event is a hint that something changed; the database is the
+only thing that knows what it changed to. This is the same discipline the search indexer
+already follows, for the same reason.
+
+**Decision 2 — The state advances by compare-and-set, and it advances before the notification
+is sent.** The update matches on all four state fields and only then writes; a redelivery finds
+them already moved, matches nothing, and sends nothing. This is ADR-0032's mechanism — MongoDB
+as the single authority, an atomic conditional update instead of a lock — applied to a second
+problem. Ordering the write before the send means a crash between them costs a missed alert
+rather than a duplicate one. That trade is deliberate: a missed price drop is a disappointment,
+while a repeated one arriving four times at midnight is why people disable notifications.
+
+**Decision 3 — The watermark follows the price upward.** Anchoring it to the price on the day
+of favouriting would exhaust the alert after a single seasonal fall: a product followed at
+10 000 som and now regularly 30 000 could never produce a drop again. Following the price up
+means the reference is the current regular price, and a fall is measured from what the buyer
+would actually pay today.
+
+**Decision 4 — An invisible product is silent, and its watermark is held.** Seller availability
+enters here and nowhere else: a deactivated seller's shop is not visible, the existing cascade
+has already materialised that onto the product, and `computeProductVisibility` is the same
+shared function the catalogue and search use. Alerting somebody about a stall they cannot buy
+from is worse than silence — it sends them across the bazaar for nothing. Holding the watermark
+while hidden means the seller's return does not replay a backlog of price movements nobody saw.
+
+**Decision 5 — Favourite alerts are MARKETING, not transactional.** They are therefore
+opt-outable and respect quiet hours. A restock is genuinely useful and genuinely not part of
+the service anyone signed up for, and a price alert at two in the morning is precisely what
+quiet hours exist to prevent.
+
+**Consequences.** The alerting decision is a pure function with no clock, database or notifier,
+and is exhaustively tested. The cost is four extra fields on every favourite row and a
+compare-and-set per alert, which is the price of never sending the same notification twice.

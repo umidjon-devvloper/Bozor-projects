@@ -44,6 +44,10 @@ export const Permission = {
   REVIEW_REPLY_OWN_SHOP: 'reviews:review:reply:own_shop',
   REVIEW_MODERATE: 'reviews:review:moderate',
 
+  // favourites
+  FAVOURITE_MANAGE_OWN: 'favourites:favourite:manage:own',
+  FAVOURITE_READ_OWN_SHOP: 'favourites:favourite:read:own_shop',
+
   // search
   SEARCH_REINDEX: 'search:index:rebuild',
 
@@ -107,6 +111,7 @@ const BUYER_PERMISSIONS: Permission[] = [
   Permission.MEDIA_UPLOAD,
   Permission.NOTIFICATION_READ_OWN,
   Permission.REVIEW_CREATE_OWN,
+  Permission.FAVOURITE_MANAGE_OWN,
   Permission.DISPUTE_RAISE_OWN,
   Permission.ONBOARDING_APPLY,
   Permission.ONBOARDING_READ_OWN,
@@ -130,6 +135,7 @@ const SELLER_STAFF_PERMISSIONS: Permission[] = [
   Permission.ORDER_ADJUST_OWN_SHOP,
   Permission.ORDER_FULFIL_OWN_SHOP,
   Permission.REVIEW_REPLY_OWN_SHOP,
+  Permission.FAVOURITE_READ_OWN_SHOP,
   Permission.DISPUTE_RESPOND_OWN_SHOP,
 ];
 
