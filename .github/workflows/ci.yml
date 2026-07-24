@@ -8,8 +8,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # No `version:` here on purpose. The single source of truth is `packageManager`
+      # in the root package.json; specifying it twice makes action-setup refuse to
+      # guess, and a pinned duplicate is how a runner ends up on a different pnpm
+      # from every developer.
       - uses: pnpm/action-setup@v4
-        with: { version: 9 }
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
@@ -24,8 +27,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # No `version:` here on purpose. The single source of truth is `packageManager`
+      # in the root package.json; specifying it twice makes action-setup refuse to
+      # guess, and a pinned duplicate is how a runner ends up on a different pnpm
+      # from every developer.
       - uses: pnpm/action-setup@v4
-        with: { version: 9 }
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
