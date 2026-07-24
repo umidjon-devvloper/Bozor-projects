@@ -83,9 +83,16 @@ export class Money {
   }
 
   private assertSameCurrency(other: Money): void {
-    if (other.currency !== this.currency) {
+    // Widened to `string` deliberately. `Currency` is a single-member union today, so inside
+    // the mismatch branch TypeScript narrows both operands to `never` and the guard's own
+    // error message becomes uninterpolatable. The guard is not dead code — it is the check
+    // that stops a second currency being added unsafely (ADR-0004) — so the types are
+    // widened at the boundary rather than the check being removed.
+    const mine: string = this.currency;
+    const theirs: string = other.currency;
+    if (theirs !== mine) {
       throw new AppError(ErrorCode.MONEY_CURRENCY_MISMATCH, {
-        detail: `Cannot combine ${this.currency} with ${other.currency}`,
+        detail: `Cannot combine ${mine} with ${theirs}`,
       });
     }
   }
@@ -134,10 +141,10 @@ export class Money {
    * null — a commission rule with no floor is `minCharge: null`, not a missing property.
    */
   clamp(min?: Money | null, max?: Money | null): Money {
-    let result: Money = this;
-    if (min && result.lessThan(min)) result = min;
-    if (max && result.greaterThan(max)) result = max;
-    return result;
+    // Floor first, then ceiling against the floored value — the order matters when the two
+    // bounds contradict each other, and `max` winning is the safer of the two answers.
+    const floored: Money = min && this.lessThan(min) ? min : this;
+    return max && floored.greaterThan(max) ? max : floored;
   }
 
   equals(other: Money): boolean {
