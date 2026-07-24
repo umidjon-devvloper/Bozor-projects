@@ -44,7 +44,7 @@ export function createIndexer(client: TypesenseClient, logger: IndexerLogger) {
       context: {
         name: shop.name,
         marketName: market?.name,
-        location: (shop.location?.coordinates ?? market?.location.coordinates) as [number, number] | undefined,
+        location: (shop.location?.coordinates ?? market?.location.coordinates),
       },
     };
   }
@@ -202,7 +202,7 @@ export function createIndexer(client: TypesenseClient, logger: IndexerLogger) {
           name: shop.name,
           marketId,
           visible: true,
-          location: (shop.location?.coordinates ?? market?.coordinates) as [number, number] | undefined,
+          location: (shop.location?.coordinates ?? market?.coordinates),
         });
         batch.push(toShopDocument(shop, market?.name, market?.coordinates) as unknown as Record<string, unknown>);
         shopCount += 1;

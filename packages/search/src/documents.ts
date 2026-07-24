@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import type mongoose from 'mongoose';
 import { resolveLocalized, type LocalizedText } from '@bozorlar/types';
 import { normalizeForSearch, searchVariants } from './normalize.js';
 
@@ -27,6 +27,16 @@ export interface ProductDocument {
   categoryPath: string[];
   categoryName?: string;
   unit: string;
+  /**
+   * Int64 tiyin, exactly as in MongoDB — never a major-unit float, which is what would let
+   * search disagree with the catalogue about a price.
+   *
+   * Typed `number` in deliberate departure from ADR-0004, because Typesense cannot sort or
+   * range-filter a string field and the index schema declares this as `int64`. The value stays
+   * an exact integer: tiyin amounts are many orders of magnitude below 2^53, where a JS number
+   * stops being exact. Every conversion in and out goes through `Money`.
+   */
+  // eslint-disable-next-line no-restricted-syntax -- see above; ADR-0004 exception for the index
   price: number;
   inStock: boolean;
   rating: number;

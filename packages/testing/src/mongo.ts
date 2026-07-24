@@ -1,67 +1,76 @@
 import mongoose from 'mongoose';
-import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainers';
+import { MongoDBContainer, type StartedMongoDBContainer } from '@testcontainers/mongodb';
 
 /**
  * Integration-test infrastructure: a real MongoDB replica set in a container.
  *
- * RECONSTRUCTED during repository recovery — the original `@bozorlar/testing` package was not
- * in the uploaded artifacts. The three exported functions and their signatures are proved by
- * the seven integration suites that call them; the replica set is not optional, because every
- * money path uses a multi-document transaction and those do not exist on a standalone server
- * (ADR-0001). A single-node replica set is used rather than three, because the transaction
- * API is what the tests need, not failover behaviour.
+ * The replica set is not optional. Every money path in this system is a multi-document
+ * transaction and those do not exist on a standalone server (ADR-0001), so a harness that
+ * quietly started one would let the transactional tests pass without testing anything.
+ *
+ * This uses the official `@testcontainers/mongodb` module rather than driving `mongod` and
+ * `rs.initiate` by hand. The first version of this file did the latter and was wrong in a way
+ * that only appeared on CI: it initiated the replica set advertising the *mapped* host and
+ * port, so the member pointed at an address that exists on the test runner and not inside the
+ * container. mongod could therefore never reach itself, no primary was ever elected, and all
+ * seven suites timed out in `beforeAll`. Getting container-internal and container-external
+ * addresses right is exactly the problem the official module exists to solve.
  */
 
-let container: StartedTestContainer | null = null;
+let container: StartedMongoDBContainer | null = null;
 
 const MONGO_IMAGE = process.env.TEST_MONGO_IMAGE ?? 'mongo:7.0';
-const REPLICA_SET = 'rs0';
+const DB_NAME = 'bozorlar_test';
 
 export async function startMongo(): Promise<void> {
   if (container) return;
 
-  container = await new GenericContainer(MONGO_IMAGE)
-    .withExposedPorts(27017)
-    .withCommand(['mongod', '--replSet', REPLICA_SET, '--bind_ip_all'])
-    .withWaitStrategy(Wait.forLogMessage(/Waiting for connections/i))
-    .start();
+  container = await new MongoDBContainer(MONGO_IMAGE).start();
 
-  const host = container.getHost();
-  const port = container.getMappedPort(27017);
-
-  // The replica set must be initiated with the host and port the client will actually dial:
-  // a member advertised as the container's internal address is unreachable from the test
-  // process, and the driver would follow the advertised address and hang.
-  await container.exec([
-    'mongosh',
-    '--quiet',
-    '--eval',
-    `rs.initiate({_id:'${REPLICA_SET}',members:[{_id:0,host:'${host}:${port}'}]})`,
-  ]);
-
-  const uri = `mongodb://${host}:${port}/bozorlar_test?replicaSet=${REPLICA_SET}&directConnection=true`;
+  /**
+   * `directConnection=true` is required, and it is not a workaround.
+   *
+   * The member is advertised under the container's own address, which does not resolve from
+   * the test process. A direct connection tells the driver to talk to the endpoint it was
+   * given instead of discovering the topology and following that address. Transactions still
+   * work: the server is a replica set member, which is what the transaction API requires.
+   */
+  const uri = `${container.getConnectionString()}/${DB_NAME}?directConnection=true`;
   process.env.MONGODB_URI = uri;
-  process.env.MONGODB_DB_NAME = 'bozorlar_test';
+  process.env.MONGODB_DB_NAME = DB_NAME;
 
-  await waitForPrimary(uri);
-  await mongoose.connect(uri, { dbName: 'bozorlar_test' });
+  await mongoose.connect(uri, { dbName: DB_NAME });
+  await assertTransactionsWork();
 }
 
-async function waitForPrimary(uri: string): Promise<void> {
-  const deadline = Date.now() + 30_000;
-  let lastError: unknown;
-  while (Date.now() < deadline) {
-    try {
-      const probe = await mongoose.createConnection(uri, { dbName: 'admin' }).asPromise();
-      const status = await probe.db?.admin().command({ hello: 1 });
-      await probe.close();
-      if (status?.isWritablePrimary === true) return;
-    } catch (error) {
-      lastError = error;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 250));
+/**
+ * Proves, once, that the container really can run a transaction.
+ *
+ * Without this the harness fails late and obscurely: the first money test to open a session
+ * reports something about transaction numbers, and the actual cause — a server that is not a
+ * replica set member — is several layers away. Failing here says so in one line.
+ */
+async function assertTransactionsWork(): Promise<void> {
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      await mongoose.connection.db
+        ?.collection('__transaction_probe__')
+        .insertOne({ at: new Date() }, { session });
+    });
+  } catch (error) {
+    throw new Error(
+      `The test container cannot run transactions, so it is not a usable replica set: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+  } finally {
+    await session.endSession();
+    await mongoose.connection.db
+      ?.collection('__transaction_probe__')
+      .drop()
+      .catch(() => undefined);
   }
-  throw new Error(`Replica set did not elect a primary in time: ${String(lastError)}`);
 }
 
 export async function stopMongo(): Promise<void> {
@@ -72,8 +81,8 @@ export async function stopMongo(): Promise<void> {
 
 /**
  * Between tests, empty every collection rather than dropping the database: dropping would
- * discard the indexes and `$jsonSchema` validators the migrations installed, and the next
- * test would then pass against a database that does not enforce what production enforces.
+ * discard the indexes and `$jsonSchema` validators the migrations installed, and the next test
+ * would then pass against a database that does not enforce what production enforces.
  */
 export async function clearCollections(): Promise<void> {
   const db = mongoose.connection.db;
