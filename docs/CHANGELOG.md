@@ -698,3 +698,50 @@ volume demands it, the pipelines here are the shape to build one from.
 23 new unit tests, all on the two pure functions. Build 15/15, typecheck 28/28, **324 tests**.
 Module boundaries clean; the aggregations themselves are still unverified against a real
 database, like every module since notifications.
+
+---
+
+# 2026-07-25 — Payments: Payme and Click wallet top-ups
+
+The module PAYMENT_SYSTEM.md has named since the beginning, and the one that unblocks the whole
+wallet lifecycle: sellers can now put money in, so the commission engine has something to
+deduct from and the inactive-seller cascade has a way out.
+
+Constants come from the providers' own reference implementations, not from memory. Both
+documentation sites block automated reading, so `PaycomUZ/paycom-integration-php-template` and
+`click-llc/click-integration-php` were read directly — error codes, transaction states, cancel
+reasons, the twelve-hour timeout, and Click's signature field order, which is not guessable and
+not rearrangeable.
+
+**Idempotency is the protocol here, not a nicety** (**ADR-0036**). Payme's documentation states
+that every call is sent twice on purpose and that the second must answer identically. One
+collection keyed `(provider, providerTransactionId)` with a unique index, plus a compare-and-set
+from `CREATED` in the same transaction as the journal entry, is what makes the retry post
+nothing. Without it the first retry of the first real payment doubles a wallet.
+
+**Payme's state integers are the shared vocabulary**, Click rows included. −1 and −2 stay
+distinct because −2 means the money was taken and then returned, and a cancellation after
+completion posts a reversing entry pointing at the original — a refund that only changed a
+status would leave the wallet holding money the platform no longer has.
+
+**Click's decimal som are converted, never rounded.** `1000.5` is one thousand som and fifty
+tiyin; a third decimal place is rejected outright, because a rounded credit is a figure the
+provider does not agree with and the gap becomes an unreconcilable ledger.
+
+**The shared secret is the authentication.** No session, no bearer token — anybody who can reach
+the callback URL can post to it. Basic `Paycom:<key>` compared in constant time for Payme, MD5
+over the protocol's field order for Click, both checked before any part of the request is read.
+Merchant credentials stay optional in the environment so the API boots without them, and an
+unset secret can never match a signature: the callbacks are closed while B5 is unsigned, not
+open.
+
+A third instance of the same bug class turned up in review, in the newest code: `String()` over
+an untrusted payload field. A provider callback is exactly where `[object Object]` becomes a
+transaction key. `shared/scalar.ts` now holds the safe reader, matching the worker's.
+
+25 new unit tests on signature construction, auth comparison, amount conversion and the
+transaction lifecycle. Build 15/15, typecheck 28/28, **349 tests**.
+
+**Not done:** buyer-side prepaid orders, and any contact with either sandbox. The protocol logic
+is pure and covered; sandbox conformance is what those tests cannot stand in for, and it needs
+the credentials B5 is waiting on.

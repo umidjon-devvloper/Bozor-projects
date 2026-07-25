@@ -76,6 +76,16 @@ const EnvSchema = z.object({
   ESKIZ_EMAIL: z.string().optional(),
   ESKIZ_PASSWORD: z.string().optional(),
 
+  // Payment providers. Optional until the merchant contracts are signed (B5): the API must
+  // boot without them, and the callback endpoints reject everything while they are unset —
+  // an empty secret can never match a signature.
+  PAYME_MERCHANT_ID: z.string().optional(),
+  PAYME_KEY: z.string().optional(),
+  CLICK_MERCHANT_ID: z.string().optional(),
+  CLICK_SERVICE_ID: z.string().optional(),
+  CLICK_MERCHANT_USER_ID: z.string().optional(),
+  CLICK_SECRET_KEY: z.string().optional(),
+
   SENTRY_DSN: z.string().optional(),
   OTEL_EXPORTER_OTLP_ENDPOINT: z.string().optional(),
   OTEL_SERVICE_NAME: z.string().default('bozorlar-api'),

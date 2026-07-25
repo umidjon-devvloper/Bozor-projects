@@ -792,3 +792,55 @@ fact, so `changeBp` and `effectiveRateBp` return null instead.
 across module boundaries without becoming a place where business rules hide. The arithmetic
 lives in two pure functions covered by 23 tests, because a seller will check their statement
 against their own notes and a statement that is wrong once is never read again.
+
+---
+
+## ADR-0036 — Both payment providers share one transaction row and Payme's state vocabulary
+
+**Status.** Accepted, 2026-07-25. Constants transcribed from `PaycomUZ/paycom-integration-php-template`
+and `click-llc/click-integration-php` — the providers' own reference implementations — because
+their documentation sites refuse automated access and a payment constant recalled from memory
+fails silently rather than loudly.
+
+**Context.** Payme and Click disagree about nearly everything at the wire. Payme is JSON-RPC
+with a five-method state machine and amounts in tiyin; Click is two form-encoded callbacks with
+an MD5 signature and amounts in decimal som. The only thing they agree on is what matters:
+money arrived for a known account, once, and must be credited exactly once.
+
+**Decision 1 — One `payment_transactions` collection, keyed by `(provider, providerTransactionId)`
+with a unique index.** Both providers retry every call by design; Payme's documentation states
+plainly that each request is sent twice and that the second must produce the same answer as the
+first. Idempotency is therefore the protocol, not a nicety. The unique index enforces it where a
+race cannot get past it, and crediting is a compare-and-set from `CREATED` inside the same
+transaction as the journal entry — so the retry loses, posts nothing, and returns the stored
+answer. Without this, the first retry of the first real payment doubles a wallet.
+
+**Decision 2 — Payme's state integers are the shared vocabulary, for Click rows too.** 1, 2, −1,
+−2 are not renamed. They go out on the wire in every `CheckTransaction` response, and a local
+alias would put a translation layer between us and what a support engineer reads off Payme's
+dashboard. Click has no state field of its own, so its lifecycle maps onto the same four values:
+one vocabulary for two providers is worth more than a faithful copy of each.
+
+**Decision 3 — −1 and −2 are not interchangeable.** −2 means the money was taken and then
+returned. Collapsing both into −1 would make a refunded payment indistinguishable from one that
+never completed, and a cancellation after completion posts a reversing journal entry pointing at
+the original through `reversesEntryId` — a refund that only changed a status would leave the
+wallet holding money the platform no longer has.
+
+**Decision 4 — Amount conversion refuses rather than rounds.** Click sends `1000.5` and means one
+thousand som and fifty tiyin. A third decimal place cannot be represented, so it is rejected: a
+rounded credit is a number the provider does not agree with, and the difference surfaces later
+as a ledger nobody can reconcile.
+
+**Decision 5 — The shared secret is the authentication, and it is checked first.** Neither
+endpoint has a session or a bearer token; anybody who can reach the URL can post to it. Payme is
+Basic `Paycom:<key>` compared in constant time, Click is the MD5 digest over a field order that
+is the protocol and is not rearrangeable. Merchant credentials are optional in the environment
+so the API boots without them (B5 is unsigned) — and an unset secret can never match a
+signature, so the callbacks are closed rather than open while it stays that way.
+
+**Consequences.** Only seller wallet top-ups are implemented. Buyer-side prepaid orders reuse the
+same row and state machine and are deliberately not built until this path has run against a real
+cashbox. Nothing here has been tested against either provider's sandbox; the protocol logic is
+pure and covered by 25 tests, but sandbox conformance is the thing those tests cannot stand in
+for.

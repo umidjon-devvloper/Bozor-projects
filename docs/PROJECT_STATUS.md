@@ -353,10 +353,21 @@ Read-only reports over data every module already writes. Owns no collection.
   reported with the age of its oldest item.
 - Seller statements are scoped by token, not by parameter.
 
+### Payments — Payme and Click wallet top-ups ✅ (sandbox-unverified)
+Unblocks the wallet lifecycle: sellers can put money in, so commission has something to deduct.
+- **One transaction row for both providers**, keyed `(provider, providerTransactionId)` with a
+  unique index (ADR-0036). Both providers retry every call by design; Payme documents it.
+- **Payme's state integers as the shared vocabulary**, with −1 and −2 kept distinct because −2
+  is a refund and posts a reversing journal entry.
+- **Click's decimal som converted, never rounded** — a third decimal place is rejected.
+- **The shared secret is the authentication**, checked before anything else is read. Credentials
+  are optional in the environment, so the callbacks are closed while B5 is unsigned.
+- Buyer-side prepaid orders deliberately not built until this path meets a real cashbox.
+
 ## Verified
 - **The entire workspace typechecks clean** under `strict`, `noUncheckedIndexedAccess` and
   `exactOptionalPropertyTypes` — 28/28 turbo tasks
-- Unit suites: **324/324 passing** (305 in `apps/api`, 12 money, 7 errors)
+- Unit suites: **349/349 passing** (330 in `apps/api`, 12 money, 7 errors)
 - Build: 15/15 turbo tasks
 - Integration suites are **not** run in CI yet; they require Docker for the MongoDB replica set
 

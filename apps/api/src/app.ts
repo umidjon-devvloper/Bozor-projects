@@ -74,6 +74,12 @@ import {
   createSellerFavouriteRouter,
 } from './modules/favourites/index.js';
 import {
+  createClickController,
+  createPaymentCallbackRouter,
+  createPaymentService,
+  createPaymeController,
+} from './modules/payments/index.js';
+import {
   createAdminReportingRouter,
   createReportingController,
   createReportingService,
@@ -297,6 +303,11 @@ export function createApp({ logger, redis }: AppDependencies): Express {
   });
   const reviewController = createReviewController(reviewService);
 
+  // payments — provider callbacks; authentication is the shared secret, checked inside
+  const paymentService = createPaymentService({ logger });
+  const paymeController = createPaymeController(paymentService, logger);
+  const clickController = createClickController(paymentService, logger);
+
   // reporting — read-only, owns no collection, so it needs nothing but a logger
   const reportingService = createReportingService({ logger });
   const reportingController = createReportingController(reportingService);
@@ -346,6 +357,10 @@ export function createApp({ logger, redis }: AppDependencies): Express {
   app.use('/api/v1/seller/wallet', createSellerWalletRouter(walletController, requireAuth));
   app.use('/api/v1', createPublicReviewRouter(reviewController));
   app.use('/api/v1/reviews', createReviewRouter(reviewController, requireAuth));
+  app.use(
+    '/api/v1/payments',
+    createPaymentCallbackRouter(paymeController, clickController),
+  );
   app.use('/api/v1/admin/reports', createAdminReportingRouter(reportingController, requireAuth));
   app.use('/api/v1/seller/reports', createSellerReportingRouter(reportingController, requireAuth));
   app.use('/api/v1/favourites', createFavouriteRouter(favouriteController, requireAuth));
