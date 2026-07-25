@@ -6,7 +6,7 @@
   "main": "./dist/main.js",
   "scripts": {
     "build": "tsc -b",
-    "dev": "node --watch --experimental-strip-types src/main.ts",
+    "dev": "tsx watch src/main.ts",
     "start": "node dist/main.js",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json",
     "lint": "eslint src",
@@ -59,6 +59,7 @@
     "dotenv": "^16.4.5",
     "supertest": "^7.0.0",
     "testcontainers": "^10.13.2",
+    "tsx": "^4.19.2",
     "vitest": "^2.1.2"
   }
 }

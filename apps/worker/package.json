@@ -6,7 +6,7 @@
   "main": "./dist/main.js",
   "scripts": {
     "build": "tsc -b",
-    "dev": "node --watch --experimental-strip-types src/main.ts",
+    "dev": "tsx watch src/main.ts",
     "start": "node dist/main.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
@@ -27,6 +27,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.7.5",
+    "tsx": "^4.19.2",
     "vitest": "^2.1.2"
   }
 }
