@@ -162,3 +162,14 @@ export const ShopResponseSchema = z.object({
   rating: z.object({ avg: z.number(), count: z.number().int() }),
   productCount: z.number().int(),
 });
+
+/**
+ * Response types, inferred from the schemas above.
+ *
+ * Exported because the web and mobile clients need them: this is the single definition of what
+ * an endpoint returns, and a client that re-declares it is a client that drifts from the server
+ * without anything failing to compile.
+ */
+export type RegionResponse = z.infer<typeof RegionResponseSchema>;
+export type MarketResponse = z.infer<typeof MarketResponseSchema>;
+export type ShopResponse = z.infer<typeof ShopResponseSchema>;

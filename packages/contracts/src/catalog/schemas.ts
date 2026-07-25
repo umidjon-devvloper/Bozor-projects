@@ -123,3 +123,8 @@ export const ProductResponseSchema = z.object({
   isPurchasable: z.boolean(),
   rating: z.object({ avg: z.number(), count: z.number().int() }),
 });
+
+/** Response types, inferred from the schemas above — see the note in `geo/schemas.ts`. */
+export type MoneyResponse = z.infer<typeof MoneyResponseSchema>;
+export type QuantityResponse = z.infer<typeof QuantityResponseSchema>;
+export type ProductResponse = z.infer<typeof ProductResponseSchema>;

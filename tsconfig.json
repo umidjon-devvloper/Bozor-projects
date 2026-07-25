@@ -1,18 +1,47 @@
 {
   "files": [],
   "references": [
-    { "path": "packages/types" },
-    { "path": "packages/errors" },
-    { "path": "packages/money" },
-    { "path": "packages/config" },
-    { "path": "packages/logger" },
-    { "path": "packages/domain" },
-    { "path": "packages/contracts" },
-    { "path": "packages/storage" },
-    { "path": "packages/ledger" },
-    { "path": "packages/notifications" },
-    { "path": "packages/search" },
-    { "path": "apps/api" },
-    { "path": "apps/worker" }
+    {
+      "path": "packages/types"
+    },
+    {
+      "path": "packages/errors"
+    },
+    {
+      "path": "packages/money"
+    },
+    {
+      "path": "packages/config"
+    },
+    {
+      "path": "packages/logger"
+    },
+    {
+      "path": "packages/domain"
+    },
+    {
+      "path": "packages/contracts"
+    },
+    {
+      "path": "packages/storage"
+    },
+    {
+      "path": "packages/ledger"
+    },
+    {
+      "path": "packages/notifications"
+    },
+    {
+      "path": "packages/search"
+    },
+    {
+      "path": "packages/api-client"
+    },
+    {
+      "path": "apps/api"
+    },
+    {
+      "path": "apps/worker"
+    }
   ]
 }

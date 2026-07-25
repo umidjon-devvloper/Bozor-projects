@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  .dark {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-paper text-ink font-body antialiased;
+  }
+
+  .dark body {
+    @apply bg-ink text-paper;
+  }
+
+  /* A quiet floor, not an announcement: focus must be visible on every surface. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-saffron ring-offset-2 ring-offset-paper;
+  }
+
+  .dark :focus-visible {
+    @apply ring-offset-ink;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
