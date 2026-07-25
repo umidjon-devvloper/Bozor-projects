@@ -1,5 +1,6 @@
 import type {
   CartResponse,
+  OrderResponse,
   QuoteResponse,
   FavouriteProductView,
   MarketResponse,
@@ -215,7 +216,10 @@ export function createApiClient(options: ApiClientOptions) {
           body: JSON.stringify(note ? { quoteId, note } : { quoteId }),
         }),
       list: (query: { limit?: number; cursor?: string } = {}) =>
-        request<unknown[]>('/api/v1/orders', { query }),
+        request<OrderResponse[]>('/api/v1/orders', { query }),
+      get: (id: string) => request<OrderResponse>(`/api/v1/orders/${id}`),
+      confirm: (id: string) =>
+        request<OrderResponse>(`/api/v1/orders/${id}/confirm`, { method: 'POST' }),
     },
 
     geo: {

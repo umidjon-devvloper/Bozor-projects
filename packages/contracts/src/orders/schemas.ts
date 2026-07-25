@@ -67,23 +67,71 @@ export const RespondToAdjustmentRequestSchema = z.object({ approved: z.boolean()
 
 export const MoneyDTOSchema = z.object({ amount: z.string(), currency: z.literal('UZS') });
 
+/**
+ * An order as a client receives it.
+ *
+ * Brought in line with `toOrderResponse` during the web build: the previous shape was a subset
+ * written before the module was finished and had drifted — no `groupId`, no pickup window, no
+ * stall address, and names typed as `LocalizedText` unions when the mapper resolves them to a
+ * string before sending. Every client reading the old shape was either missing fields or
+ * defending against a case the server never produces.
+ *
+ * Two fields are decisions rather than data. `shop.phone` is null while a buyer's order is
+ * still PENDING, so an unanswered order cannot be used to harvest stall numbers. And
+ * `canCancel` / `canConfirm` / `canDispute` are computed by the server from the state machine
+ * rather than inferred per client: a button that appears when the action would be refused is
+ * worse than no button at all.
+ */
 export const OrderResponseSchema = z.object({
   id: ObjectIdSchema,
   orderNo: z.string(),
+  groupId: z.string(),
   status: OrderStatusSchema,
-  shop: z.object({ id: ObjectIdSchema, name: z.union([z.string(), z.record(z.string())]) }),
+  shop: z.object({
+    id: ObjectIdSchema,
+    name: z.string(),
+    marketName: z.string(),
+    sectionCode: z.string().nullable(),
+    stallNo: z.string().nullable(),
+    phone: z.string().nullable(),
+  }),
   lines: z.array(
     z.object({
       lineId: z.string(),
-      name: z.union([z.string(), z.record(z.string())]),
+      productId: ObjectIdSchema,
+      name: z.string(),
+      slug: z.string(),
+      imageUrl: z.string().nullable(),
+      unit: z.string(),
       orderedQty: z.object({ value: z.string(), unit: z.string() }),
       confirmedQty: z.object({ value: z.string(), unit: z.string() }).nullable(),
       unitPrice: MoneyDTOSchema,
       lineTotal: MoneyDTOSchema,
+      tolerancePercent: z.number().int(),
+      adjustmentStatus: z.string().nullable(),
     }),
   ),
-  totals: z.object({ items: MoneyDTOSchema, adjustment: MoneyDTOSchema, grand: MoneyDTOSchema }),
+  totals: z.object({
+    items: MoneyDTOSchema,
+    adjustment: MoneyDTOSchema,
+    discount: MoneyDTOSchema,
+    grand: MoneyDTOSchema,
+  }),
+  paymentMode: z.enum(['CASH_ON_PICKUP', 'PREPAID_ONLINE']),
+  pickupWindow: z.object({ from: z.string(), to: z.string() }).nullable(),
+  acceptDeadline: z.string().nullable(),
+  autoCompleteAt: z.string().nullable(),
+  disputeDeadline: z.string().nullable(),
+  hasAdjustment: z.boolean(),
+  cancelledBy: z.string().nullable(),
+  cancelReasonCode: z.string().nullable(),
+  cancelReason: z.string().nullable(),
+  note: z.string().nullable(),
   canCancel: z.boolean(),
   canConfirm: z.boolean(),
+  canDispute: z.boolean(),
   createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
 });
+
+export type OrderResponse = z.infer<typeof OrderResponseSchema>;
