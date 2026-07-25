@@ -1,4 +1,5 @@
 import type {
+  CartResponse,
   FavouriteProductView,
   MarketResponse,
   ProductResponse,
@@ -15,6 +16,22 @@ import type {
  * still looking at the diff. A generated SDK or a hand-copied type would find out later, from a
  * user staring at an empty card.
  */
+
+export interface PublicUser {
+  id: string;
+  phone: string;
+  name: string;
+  roles: string[];
+  phoneVerified: boolean;
+}
+
+export interface SessionResponse {
+  accessToken: string;
+  expiresIn: number;
+  tokenType: 'Bearer';
+  refreshToken?: string;
+  user?: PublicUser;
+}
 
 export interface ApiEnvelope<T> {
   data: T;
@@ -58,6 +75,15 @@ export class ApiError extends Error {
 
 export interface ApiClientOptions {
   baseUrl: string;
+  /**
+   * Marks this as a browser client, which changes how the API delivers tokens: with
+   * `x-client: web` the refresh token is set as an httpOnly cookie and withheld from the
+   * response body, so no script — including an injected one — can read it. Mobile clients omit
+   * the header and receive both tokens, because they have no cookie jar.
+   */
+  webClient?: boolean;
+  /** Called once when a request gets 401, to obtain a fresh access token before one retry. */
+  onUnauthorized?: () => Promise<string | null>;
   /** Sent as `Accept-Language`; the API localises `LocalizedText` from it. */
   locale?: string;
   /** Provided by the caller so this package stays free of storage and framework concerns. */
@@ -77,16 +103,39 @@ export function createApiClient(options: ApiClientOptions) {
       if (value !== undefined) url.searchParams.set(key, String(value));
     }
 
-    const token = options.getAccessToken?.();
-    const headers = new Headers(init.headers);
-    headers.set('Accept', 'application/json');
-    if (options.locale) headers.set('Accept-Language', options.locale);
-    if (token) headers.set('Authorization', `Bearer ${token}`);
-    if (init.body && !headers.has('Content-Type')) {
-      headers.set('Content-Type', 'application/json');
+    const send = async (token: string | null | undefined): Promise<Response> => {
+      const headers = new Headers(init.headers);
+      headers.set('Accept', 'application/json');
+      if (options.locale) headers.set('Accept-Language', options.locale);
+      if (options.webClient) headers.set('x-client', 'web');
+      if (token) headers.set('Authorization', `Bearer ${token}`);
+      if (init.body && !headers.has('Content-Type')) {
+        headers.set('Content-Type', 'application/json');
+      }
+      // The refresh cookie only travels if the request asks for it.
+      const credentials = options.webClient ? 'include' : init.credentials;
+      return doFetch(url.toString(), {
+        ...init,
+        headers,
+        ...(credentials ? { credentials } : {}),
+      });
+    };
+
+    let response = await send(options.getAccessToken?.());
+
+    /**
+     * One retry, and only on 401.
+     *
+     * An access token expires mid-session and the only civil answer is to renew it and carry on
+     * rather than bounce somebody to a sign-in page holding a full basket. It is deliberately a
+     * single attempt: if the refresh itself is rejected the session is genuinely over, and
+     * retrying would turn one expired token into a loop.
+     */
+    if (response.status === 401 && options.onUnauthorized) {
+      const renewed = await options.onUnauthorized();
+      if (renewed) response = await send(renewed);
     }
 
-    const response = await doFetch(url.toString(), { ...init, headers });
     const text = await response.text();
     const payload: unknown = text ? JSON.parse(text) : null;
 
@@ -106,6 +155,40 @@ export function createApiClient(options: ApiClientOptions) {
 
   return {
     request,
+
+    auth: {
+      login: (phone: string, password: string) =>
+        request<SessionResponse>('/api/v1/auth/login', {
+          method: 'POST',
+          body: JSON.stringify({ phone, password }),
+        }),
+      register: (input: { phone: string; password: string; name: string }) =>
+        request<SessionResponse>('/api/v1/auth/register', {
+          method: 'POST',
+          body: JSON.stringify(input),
+        }),
+      /** No body: the refresh token rides in the httpOnly cookie for web clients. */
+      refresh: () => request<SessionResponse>('/api/v1/auth/refresh', { method: 'POST', body: '{}' }),
+      logout: () => request<null>('/api/v1/auth/logout', { method: 'POST' }),
+      me: () => request<PublicUser>('/api/v1/auth/me'),
+    },
+
+    cart: {
+      get: () => request<CartResponse>('/api/v1/cart'),
+      addItem: (productId: string, qty: { value: string; unit: string }) =>
+        request<CartResponse>('/api/v1/cart/items', {
+          method: 'POST',
+          body: JSON.stringify({ productId, qty }),
+        }),
+      updateItem: (lineId: string, qty: { value: string; unit: string }) =>
+        request<CartResponse>(`/api/v1/cart/items/${lineId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ qty }),
+        }),
+      removeItem: (lineId: string) =>
+        request<CartResponse>(`/api/v1/cart/items/${lineId}`, { method: 'DELETE' }),
+      clear: () => request<CartResponse>('/api/v1/cart', { method: 'DELETE' }),
+    },
 
     geo: {
       regions: () => request<RegionResponse[]>('/api/v1/geo/regions'),

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { MoneySchema, ObjectIdSchema, QuantitySchema } from '../common/primitives.js';
+import { MoneyResponseSchema, QuantityResponseSchema } from '../catalog/schemas.js';
 
 const MinorUnitString = z.string().regex(/^\d{1,19}$/, 'Must be an integer string of minor units');
 const LineIdSchema = z.string().regex(/^[a-f0-9]{16}$/, 'Invalid cart line id');
@@ -72,3 +73,40 @@ export const QuoteResponseSchema = z.object({
     z.object({ lineId: z.string(), productId: ObjectIdSchema, code: LineIssueSchema }),
   ),
 });
+
+/**
+ * The cart as the API returns it.
+ *
+ * Written down here rather than left implicit in the mapper because three clients read it and
+ * a shape that only exists in a controller is a shape each of them re-guesses. Issues are per
+ * line on purpose: a buyer with twelve items and one problem needs to know which one.
+ */
+export const CartLineResponseSchema = z.object({
+  lineId: z.string(),
+  productId: z.string(),
+  shopId: z.string(),
+  name: z.string(),
+  slug: z.string(),
+  imageUrl: z.string().nullable(),
+  qty: QuantityResponseSchema,
+  unitPrice: MoneyResponseSchema.nullable(),
+  lineTotal: MoneyResponseSchema.nullable(),
+  priceChanged: z.boolean(),
+  purchasable: z.boolean(),
+  issues: z.array(z.object({ code: z.string() }).passthrough()),
+});
+
+export const CartResponseSchema = z.object({
+  items: z.array(CartLineResponseSchema),
+  shopGroups: z.array(
+    z.object({ shopId: z.string(), lineIds: z.array(z.string()), subtotal: MoneyResponseSchema }),
+  ),
+  subtotal: MoneyResponseSchema,
+  itemCount: z.number().int(),
+  hasIssues: z.boolean(),
+  updatedAt: z.string(),
+});
+
+export type CartLineResponse = z.infer<typeof CartLineResponseSchema>;
+export type CartResponse = z.infer<typeof CartResponseSchema>;
+export type QuoteResponse = z.infer<typeof QuoteResponseSchema>;
