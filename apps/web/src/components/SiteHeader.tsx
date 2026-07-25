@@ -16,7 +16,7 @@ import { useApi, useSession } from '@/lib/session';
  */
 export function SiteHeader({ locale }: { locale: Locale }) {
   const api = useApi();
-  const { status, user, signOut } = useSession();
+  const { status } = useSession();
   const pathname = usePathname();
 
   const cart = useQuery({
@@ -50,17 +50,12 @@ export function SiteHeader({ locale }: { locale: Locale }) {
 
           {status === 'signed-in' ? (
             <>
-              <NavLink href="/buyurtmalarim" active={pathname === '/buyurtmalarim'}>
+              <NavLink href="/buyurtmalarim" active={pathname.startsWith('/buyurtmalarim')}>
                 Buyurtmalarim
               </NavLink>
-              <button
-                type="button"
-                onClick={() => void signOut()}
-                className="ml-1 px-2 py-1.5 text-ink/50 hover:text-pomegranate dark:text-paper/50"
-                aria-label={`${user?.name ?? ''} hisobidan chiqish`}
-              >
-                Chiqish
-              </button>
+              <NavLink href="/profil" active={pathname === '/profil'}>
+                Profil
+              </NavLink>
             </>
           ) : (
             <NavLink href="/kirish" active={pathname === '/kirish'}>

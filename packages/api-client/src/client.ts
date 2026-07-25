@@ -251,6 +251,20 @@ export function createApiClient(options: ApiClientOptions) {
         request<OrderResponse>(`/api/v1/orders/${id}/confirm`, { method: 'POST' }),
     },
 
+    disputes: {
+      raise: (input: { orderId: string; reason: string; claim: string }) =>
+        request<{ id: string; disputeNo: string }>('/api/v1/disputes', {
+          method: 'POST',
+          body: JSON.stringify(input),
+        }),
+      listMine: () => request<unknown[]>('/api/v1/disputes'),
+    },
+
+    profile: {
+      update: (input: { firstName?: string; lastName?: string; locale?: string }) =>
+        request<PublicUser>('/api/v1/auth/me', { method: 'PATCH', body: JSON.stringify(input) }),
+    },
+
     geo: {
       regions: () => request<RegionResponse[]>('/api/v1/geo/regions'),
       districts: (regionId: string) =>

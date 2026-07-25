@@ -129,11 +129,14 @@ export default function OrdersPage() {
           <ul className="divide-y divide-ink/10 dark:divide-paper/10">
             {past.map((order) => (
               <li key={order.id} className="flex items-baseline justify-between gap-4 py-3">
-                <span className="min-w-0 font-body text-sm text-ink/70 dark:text-paper/70">
+                <Link
+                  href={`/buyurtmalarim/${order.id}`}
+                  className="min-w-0 font-body text-sm text-ink/70 hover:text-tile dark:text-paper/70"
+                >
                   <span className="tabular-nums">{order.orderNo}</span>
                   <span className="px-1.5 text-saffron">·</span>
                   {order.shop.name}
-                </span>
+                </Link>
                 <span className="shrink-0 font-body text-xs text-ink/50 dark:text-paper/50">
                   {STATUS_LABEL[order.status] ?? order.status}
                 </span>
@@ -162,9 +165,12 @@ function LiveOrder({
   return (
     <article className="rounded-stall border border-ink/10 bg-white/60 p-4 dark:border-paper/10 dark:bg-paper/5">
       <div className="flex items-baseline justify-between gap-4">
-        <span className="font-body text-xs tabular-nums text-ink/50 dark:text-paper/50">
+        <Link
+          href={`/buyurtmalarim/${order.id}`}
+          className="font-body text-xs tabular-nums text-ink/50 hover:text-tile dark:text-paper/50"
+        >
           {order.orderNo}
-        </span>
+        </Link>
         <span className="rounded-full bg-tile/10 px-2.5 py-1 font-body text-xs text-tile dark:text-tile-light">
           {STATUS_LABEL[order.status] ?? order.status}
         </span>
