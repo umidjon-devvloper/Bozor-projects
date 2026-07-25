@@ -21,6 +21,8 @@ let container: StartedMongoDBContainer | null = null;
 
 const MONGO_IMAGE = process.env.TEST_MONGO_IMAGE ?? 'mongo:7.0';
 const DB_NAME = 'bozorlar_test';
+/** The name `@testcontainers/mongodb` starts mongod with (`--replSet rs0`). */
+const REPLICA_SET = 'rs0';
 
 export async function startMongo(): Promise<void> {
   if (container) return;
@@ -28,14 +30,21 @@ export async function startMongo(): Promise<void> {
   container = await new MongoDBContainer(MONGO_IMAGE).start();
 
   /**
-   * `directConnection=true` is required, and it is not a workaround.
+   * Both parameters are needed, and neither is a workaround.
    *
-   * The member is advertised under the container's own address, which does not resolve from
-   * the test process. A direct connection tells the driver to talk to the endpoint it was
-   * given instead of discovering the topology and following that address. Transactions still
-   * work: the server is a replica set member, which is what the transaction API requires.
+   * `directConnection=true` because the member is advertised under the container's own
+   * address, which does not resolve from the test process; a direct connection tells the
+   * driver to talk to the endpoint it was given rather than discovering the topology and
+   * following that address. The driver permits this alongside `replicaSet` — its only
+   * constraints on `directConnection` are that the URI is not SRV and names exactly one host.
+   *
+   * `replicaSet=rs0` because `@bozorlar/config` refuses to boot against a URI without it
+   * (ADR-0001: transactions require a replica set, and failing at boot beats discovering it
+   * when the first commission charge cannot be committed). That guard is correct and is not
+   * being circumvented here: this container genuinely is a single-node replica set named rs0,
+   * so the URI states a fact rather than satisfying a string check.
    */
-  const uri = `${container.getConnectionString()}/${DB_NAME}?directConnection=true`;
+  const uri = `${container.getConnectionString()}/${DB_NAME}?replicaSet=${REPLICA_SET}&directConnection=true`;
   process.env.MONGODB_URI = uri;
   process.env.MONGODB_DB_NAME = DB_NAME;
 
