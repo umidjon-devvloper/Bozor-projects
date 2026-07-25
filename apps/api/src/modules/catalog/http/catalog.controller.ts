@@ -97,6 +97,15 @@ export function createCatalogController(deps: {
     },
 
     // ---- seller ----
+    async moderationQueue(req: Request, res: Response): Promise<void> {
+      const page = await products.listForModeration(req.query as Record<string, unknown>);
+      sendCollection(
+        res,
+        page.items.map((item) => toProductResponse(item, sellerView(req, item.shopId))),
+        { next: page.nextCursor, hasMore: page.hasMore },
+      );
+    },
+
     async listMyProducts(req: Request, res: Response): Promise<void> {
       const auth = requireAuth(req);
       const page = await products.listForSeller(req.query, auth.shopIds);

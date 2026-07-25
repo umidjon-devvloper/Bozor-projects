@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { formatSom } from '@bozorlar/api-client';
 import type { QueueDepth } from '@bozorlar/api-client';
@@ -49,9 +50,12 @@ export default function DashboardPage() {
   return (
     <Shell>
       <section className="mb-14">
-        <h2 className="mb-4 font-display text-base font-medium text-ink dark:text-paper">
-          Navbatlar
-        </h2>
+        <div className="mb-4 flex items-baseline justify-between gap-4">
+          <h2 className="font-display text-base font-medium text-ink dark:text-paper">Navbatlar</h2>
+          <Link href="/navbatlar" className="font-body text-sm text-tile hover:underline dark:text-tile-light">
+            Ko'rib chiqish →
+          </Link>
+        </div>
         {queues.isPending ? (
           <Muted>Navbatlar yuklanmoqda…</Muted>
         ) : queues.isError || !queues.data ? (

@@ -136,6 +136,30 @@ export interface CommissionRule {
   note: string | null;
 }
 
+export interface SellerApplication {
+  id: string;
+  status: string;
+  shopName?: unknown;
+  applicantName?: string;
+  phone?: string;
+  createdAt: string;
+  submittedAt?: string | null;
+  reviewerId?: string | null;
+}
+
+export interface AdminDispute {
+  id: string;
+  disputeNo: string;
+  status: string;
+  reason: string;
+  claim: string;
+  orderId: string;
+  orderNo?: string;
+  shopId: string;
+  claimedAmount?: { amount: string; currency: 'UZS' } | null;
+  createdAt: string;
+}
+
 export interface PublicUser {
   id: string;
   phone: string;
@@ -419,6 +443,26 @@ export function createApiClient(options: ApiClientOptions) {
             body: JSON.stringify(input),
           }),
       },
+      productQueue: (query: { limit?: number } = {}) =>
+        request<ProductResponse[]>('/api/v1/admin/products/moderation-queue', { query }),
+      applications: (query: { status?: string; limit?: number } = {}) =>
+        request<SellerApplication[]>('/api/v1/admin/seller-applications', { query }),
+      claimApplication: (id: string) =>
+        request<SellerApplication>(`/api/v1/admin/seller-applications/${id}/claim`, { method: 'POST' }),
+      approveApplication: (id: string) =>
+        request<SellerApplication>(`/api/v1/admin/seller-applications/${id}/approve`, { method: 'POST' }),
+      rejectApplication: (id: string, reason: string) =>
+        request<SellerApplication>(`/api/v1/admin/seller-applications/${id}/reject`, {
+          method: 'POST',
+          body: JSON.stringify({ reason }),
+        }),
+      disputes: (query: { status?: string; limit?: number } = {}) =>
+        request<AdminDispute[]>('/api/v1/admin/disputes', { query }),
+      resolveDispute: (id: string, outcome: string, reason: string, refundAmount?: string) =>
+        request<AdminDispute>(`/api/v1/admin/disputes/${id}/resolve`, {
+          method: 'POST',
+          body: JSON.stringify(refundAmount ? { outcome, reason, refundAmount } : { outcome, reason }),
+        }),
       moderateProduct: (id: string, approved: boolean, reason?: string) =>
         request<unknown>(`/api/v1/admin/products/${id}/moderate`, {
           method: 'POST',

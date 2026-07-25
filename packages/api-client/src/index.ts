@@ -16,5 +16,7 @@ export {
   type ModerationQueues,
   type QueueDepth,
   type CommissionRule,
+  type SellerApplication,
+  type AdminDispute,
 } from './client.js';
 export { formatSom, formatQuantity, localized } from './format.js';

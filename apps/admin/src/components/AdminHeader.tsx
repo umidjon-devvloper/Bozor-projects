@@ -18,6 +18,8 @@ export function AdminHeader() {
         {status === 'signed-in' ? (
           <nav className="flex items-center gap-1 font-body text-sm">
             <Tab href="/" active={pathname === '/'}>Ko'rsatkichlar</Tab>
+            <Tab href="/navbatlar" active={pathname.startsWith('/navbatlar')}>Navbatlar</Tab>
+            <Tab href="/dokonlar" active={pathname.startsWith('/dokonlar')}>Do'konlar</Tab>
             <Tab href="/komissiya" active={pathname.startsWith('/komissiya')}>Komissiya</Tab>
             <button
               type="button"

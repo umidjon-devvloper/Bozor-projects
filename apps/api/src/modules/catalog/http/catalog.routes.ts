@@ -123,6 +123,12 @@ export function createCatalogAdminRouter(
     requirePermission(Permission.CATEGORY_MANAGE),
     asyncHandler(controller.deactivateCategory),
   );
+  router.get(
+    '/products/moderation-queue',
+    limited,
+    requirePermission(Permission.MODERATION_REVIEW),
+    asyncHandler(controller.moderationQueue),
+  );
   router.post(
     '/products/:id/moderate',
     limited,

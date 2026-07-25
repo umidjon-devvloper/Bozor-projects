@@ -355,6 +355,28 @@ export function createProductService(deps: {
     },
 
     /**
+     * The moderation queue.
+     *
+     * Added when the admin panel needed it: the platform could count products awaiting review
+     * — the reports module aggregates it — but had no way to list them, so the queue was
+     * visible and unworkable. Oldest first, because a queue worked newest-first leaves its
+     * oldest item there indefinitely.
+     */
+    async listForModeration(query: Record<string, unknown>): Promise<Page<ProductView>> {
+      const parsed = parseQuery({ ...query, sort: 'createdAt' }, SELLER_PRODUCT_QUERY_SPEC);
+      const rows = await productRepository.list(parsed, {
+        status: ProductStatus.PENDING_MODERATION,
+        deletedAt: null,
+      });
+      const page = toPage(rows as unknown as Record<string, unknown>[], parsed);
+      return {
+        items: (page.items as unknown as ProductRecord[]).map(decorate),
+        nextCursor: page.nextCursor,
+        hasMore: page.hasMore,
+      };
+    },
+
+    /**
      * Updates a product's descriptive fields.
      *
      * Touching name, description, images or category returns the product to moderation; price
