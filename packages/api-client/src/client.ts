@@ -1,5 +1,6 @@
 import type {
   CartResponse,
+  QuoteResponse,
   FavouriteProductView,
   MarketResponse,
   ProductResponse,
@@ -175,12 +176,13 @@ export function createApiClient(options: ApiClientOptions) {
 
     cart: {
       get: () => request<CartResponse>('/api/v1/cart'),
-      addItem: (productId: string, qty: { value: string; unit: string }) =>
+      /** `qty` is an integer string of minor units — thousandths of the product's unit. */
+      addItem: (productId: string, qty: string) =>
         request<CartResponse>('/api/v1/cart/items', {
           method: 'POST',
           body: JSON.stringify({ productId, qty }),
         }),
-      updateItem: (lineId: string, qty: { value: string; unit: string }) =>
+      updateItem: (lineId: string, qty: string) =>
         request<CartResponse>(`/api/v1/cart/items/${lineId}`, {
           method: 'PATCH',
           body: JSON.stringify({ qty }),
@@ -188,6 +190,32 @@ export function createApiClient(options: ApiClientOptions) {
       removeItem: (lineId: string) =>
         request<CartResponse>(`/api/v1/cart/items/${lineId}`, { method: 'DELETE' }),
       clear: () => request<CartResponse>('/api/v1/cart', { method: 'DELETE' }),
+    },
+
+    checkout: {
+      /** Holds real stock for fifteen minutes, so it is asked for once at the basket, not per keystroke. */
+      quote: (lineIds?: string[]) =>
+        request<QuoteResponse>('/api/v1/checkout/quote', {
+          method: 'POST',
+          body: JSON.stringify(lineIds ? { lineIds } : {}),
+        }),
+      getQuote: (quoteId: string) => request<QuoteResponse>(`/api/v1/checkout/quote/${quoteId}`),
+    },
+
+    orders: {
+      /**
+       * The idempotency key is required by the API, and it is the caller's job to keep it
+       * stable across retries: a tap that times out on a bazaar's mobile network and is tapped
+       * again must not become two orders.
+       */
+      create: (quoteId: string, idempotencyKey: string, note?: string) =>
+        request<{ orderIds: string[]; orderGroupId: string }>('/api/v1/orders', {
+          method: 'POST',
+          headers: { 'Idempotency-Key': idempotencyKey },
+          body: JSON.stringify(note ? { quoteId, note } : { quoteId }),
+        }),
+      list: (query: { limit?: number; cursor?: string } = {}) =>
+        request<unknown[]>('/api/v1/orders', { query }),
     },
 
     geo: {

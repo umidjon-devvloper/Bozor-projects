@@ -50,13 +50,19 @@ export const QuoteResponseSchema = z.object({
   groups: z.array(
     z.object({
       shopId: ObjectIdSchema,
-      shopName: z.union([z.string(), z.record(z.string())]),
-      marketName: z.union([z.string(), z.record(z.string())]),
+      /**
+       * Already localised by the server: the quote mapper resolves `LocalizedText` against the
+       * request's language before sending. Typing it as a union made every client handle a case
+       * the API never produces, and the wider type is what a client would defensively code
+       * around rather than a shape it would ever receive.
+       */
+      shopName: z.string(),
+      marketName: z.string(),
       lines: z.array(
         z.object({
           lineId: z.string(),
           productId: ObjectIdSchema,
-          name: z.union([z.string(), z.record(z.string())]),
+          name: z.string(),
           qty: QuantitySchema,
           unitPrice: MoneySchema,
           lineTotal: MoneySchema,

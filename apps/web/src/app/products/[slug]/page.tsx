@@ -3,6 +3,7 @@ import { formatQuantity, localized } from '@bozorlar/api-client';
 import { Locale } from '@bozorlar/types';
 import { api } from '@/lib/api';
 import { PriceBoard } from '@/components/PriceBoard';
+import { AddToCart } from '@/components/AddToCart';
 
 export const revalidate = 60;
 
@@ -74,6 +75,10 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           </p>
         </div>
       )}
+
+      <div className="mb-10">
+        <AddToCart product={product} />
+      </div>
 
       {/*
         Order rules, stated plainly rather than as a table of jargon. The tolerance is the one

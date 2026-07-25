@@ -112,12 +112,12 @@ export default function CartPage() {
             tuzating.
           </p>
         ) : (
-          <button
-            type="button"
-            className="mt-5 w-full rounded-stall bg-tile px-4 py-3 font-display text-sm font-medium text-paper hover:bg-tile-deep"
+          <Link
+            href="/checkout"
+            className="mt-5 block w-full rounded-stall bg-tile px-4 py-3 text-center font-display text-sm font-medium text-paper hover:bg-tile-deep"
           >
             Buyurtmani rasmiylashtirish
-          </button>
+          </Link>
         )}
       </div>
     </Shell>
