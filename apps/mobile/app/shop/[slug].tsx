@@ -1,6 +1,6 @@
-import { useLocalSearchParams } from 'expo-router';
+import { Link, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { formatSom, localized } from '@bozorlar/api-client';
 import type { ProductResponse } from '@bozorlar/contracts';
 import { Locale } from '@bozorlar/types';
@@ -66,7 +66,8 @@ function ProductRow({ product }: { product: ProductResponse }) {
   const dropped = product.oldPrice != null;
 
   return (
-    <View style={styles.row}>
+    <Link href={{ pathname: '/product/[slug]', params: { slug: product.slug } }} asChild>
+      <Pressable style={styles.row}>
       <View style={styles.rowText}>
         <Text style={styles.name} numberOfLines={1}>
           {localized(product.name, Locale.UZ_LATN)}
@@ -85,7 +86,8 @@ function ProductRow({ product }: { product: ProductResponse }) {
         <Text style={styles.price}>{formatSom(product.price.amount)}</Text>
         <Text style={styles.unit}>so'm/{unit}</Text>
       </View>
-    </View>
+      </Pressable>
+    </Link>
   );
 }
 

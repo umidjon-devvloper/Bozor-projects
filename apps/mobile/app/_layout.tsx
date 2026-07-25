@@ -49,6 +49,9 @@ export default function RootLayout() {
           <Stack.Screen name="index" options={{ title: 'Bozorlar' }} />
           <Stack.Screen name="market/[slug]" options={{ title: 'Bozor' }} />
           <Stack.Screen name="shop/[slug]" options={{ title: "Do'kon" }} />
+          <Stack.Screen name="product/[slug]" options={{ title: 'Mahsulot' }} />
+          <Stack.Screen name="qidiruv" options={{ title: 'Qidirish' }} />
+          <Stack.Screen name="sevimlilar" options={{ title: 'Kuzatilayotganlar' }} />
           <Stack.Screen name="savat" options={{ title: 'Savat' }} />
           <Stack.Screen name="buyurtmalarim" options={{ title: 'Buyurtmalarim' }} />
           <Stack.Screen name="kirish" options={{ title: 'Kirish', presentation: 'modal' }} />
