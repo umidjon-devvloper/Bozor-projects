@@ -122,6 +122,9 @@ export function createApiClient(options: ApiClientOptions) {
     shops: {
       list: (query: { marketId?: string; limit?: number; cursor?: string } = {}) =>
         request<ShopResponse[]>('/api/v1/shops', { query }),
+      inMarket: (marketId: string, query: { limit?: number; cursor?: string } = {}) =>
+        request<ShopResponse[]>(`/api/v1/markets/${marketId}/shops`, { query }),
+      get: (idOrSlug: string) => request<ShopResponse>(`/api/v1/shops/${idOrSlug}`),
     },
 
     products: {

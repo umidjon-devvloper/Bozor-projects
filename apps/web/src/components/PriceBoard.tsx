@@ -25,7 +25,7 @@ export function PriceBoard({
   previousMinor?: string | null;
   unit: string;
   size?: 'sm' | 'md' | 'lg';
-  className?: string;
+  className?: string | undefined;
 }) {
   const dropped = previousMinor != null && BigInt(previousMinor) > BigInt(minor);
 
@@ -77,7 +77,7 @@ export function StallAddress({
   market: string;
   section?: string | null;
   stall?: string | null;
-  className?: string;
+  className?: string | undefined;
 }) {
   const parts = [market, section, stall ? `${stall}-do'kon` : null].filter(Boolean);
   return (
