@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { ApiError } from '@bozorlar/api-client';
 import { SessionProvider } from '@bozorlar/session';
 import { API_BASE_URL } from '@/api';
+import { configureNotificationHandler } from '@/push';
 import { secureRefreshStore } from '@/secureStore';
 import { theme } from '@/theme';
 
@@ -17,6 +18,8 @@ import { theme } from '@/theme';
  * signal and none at all, and a request that fails because somebody walked behind a wall
  * deserves another attempt rather than an error message.
  */
+configureNotificationHandler();
+
 export default function RootLayout() {
   const [client] = useState(
     () =>
@@ -46,6 +49,9 @@ export default function RootLayout() {
           <Stack.Screen name="index" options={{ title: 'Bozorlar' }} />
           <Stack.Screen name="market/[slug]" options={{ title: 'Bozor' }} />
           <Stack.Screen name="shop/[slug]" options={{ title: "Do'kon" }} />
+          <Stack.Screen name="savat" options={{ title: 'Savat' }} />
+          <Stack.Screen name="buyurtmalarim" options={{ title: 'Buyurtmalarim' }} />
+          <Stack.Screen name="kirish" options={{ title: 'Kirish', presentation: 'modal' }} />
         </Stack>
       </SessionProvider>
     </QueryClientProvider>

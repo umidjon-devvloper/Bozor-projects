@@ -333,6 +333,23 @@ export function createApiClient(options: ApiClientOptions) {
       me: () => request<PublicUser>('/api/v1/auth/me'),
     },
 
+    devices: {
+      /**
+       * Registers this device for push. `deviceId` is stable per install rather than per
+       * launch, so re-registering after an app update replaces the record instead of leaving
+       * a dead token behind that the notification engine keeps trying.
+       */
+      register: (input: {
+        deviceId: string;
+        platform: string;
+        pushToken?: string;
+        appVersion?: string;
+        locale?: string;
+      }) => request<{ id: string }>('/api/v1/devices', { method: 'POST', body: JSON.stringify(input) }),
+      remove: (deviceId: string) =>
+        request<null>(`/api/v1/devices/${deviceId}`, { method: 'DELETE' }),
+    },
+
     cart: {
       get: () => request<CartResponse>('/api/v1/cart'),
       /** `qty` is an integer string of minor units — thousandths of the product's unit. */

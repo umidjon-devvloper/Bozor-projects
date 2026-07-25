@@ -6,4 +6,6 @@
  * localhost, and pointing it at a machine's LAN address is a per-developer setting rather than
  * something to commit.
  */
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4000';
+const configured: unknown = process.env.EXPO_PUBLIC_API_URL;
+export const API_BASE_URL =
+  typeof configured === 'string' && configured.length > 0 ? configured : 'http://localhost:4000';
