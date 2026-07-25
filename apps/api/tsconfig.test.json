@@ -6,7 +6,16 @@
     "declaration": false,
     "declarationMap": false,
     "incremental": false,
-    "types": ["node"]
+    "types": [
+      "node"
+    ]
   },
-  "include": ["src/**/*", "tests/**/*", "../worker/src/**/*"]
+  "include": [
+    "src/**/*",
+    "tests/**/*",
+    "../worker/src/**/*",
+    "vitest.config.ts",
+    "vitest.int.config.ts",
+    "vitest.setup.ts"
+  ]
 }

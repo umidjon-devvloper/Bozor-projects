@@ -25,6 +25,18 @@ jobs:
 
   integration:
     runs-on: ubuntu-latest
+    # MongoDB and MinIO are started per suite by Testcontainers, because each needs a
+    # replica set or a bucket layout the suite itself defines. Redis needs neither, so it
+    # is a plain service on the port `.env.test` already names.
+    services:
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       # No `version:` here on purpose. The single source of truth is `packageManager`
