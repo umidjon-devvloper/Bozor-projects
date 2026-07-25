@@ -244,7 +244,7 @@ export function createGeoController(deps: {
     },
 
     async shopModerationQueue(req: Request, res: Response): Promise<void> {
-      const page = await shops.listForModeration(req.query as Record<string, unknown>);
+      const page = await shops.listForModeration(req.query);
       sendCollection(
         res,
         page.items.map((shop) => toShopResponse(shop, { ...viewOptions(req), privileged: true })),
