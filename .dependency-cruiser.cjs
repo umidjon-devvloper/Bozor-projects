@@ -43,6 +43,9 @@ module.exports = {
   ],
   options: {
     doNotFollow: { path: 'node_modules' },
+    // Build output is not source and has no boundaries to respect. Without this, Next's
+    // compiled chunks flood the report with orphan warnings and bury anything real.
+    exclude: { path: '(^|/)(\\.next|dist|coverage)(/|$)' },
     tsConfig: { fileName: 'tsconfig.base.json' },
     tsPreCompilationDeps: true,
   },
