@@ -320,8 +320,15 @@ export function createApiClient(options: ApiClientOptions) {
           method: 'POST',
           body: JSON.stringify(input),
         }),
-      /** No body: the refresh token rides in the httpOnly cookie for web clients. */
-      refresh: () => request<SessionResponse>('/api/v1/auth/refresh', { method: 'POST', body: '{}' }),
+      /**
+       * Web clients send nothing — the refresh token rides in the httpOnly cookie. Native
+       * clients pass the token they stored, because they have no cookie jar.
+       */
+      refresh: (refreshToken?: string) =>
+        request<SessionResponse>('/api/v1/auth/refresh', {
+          method: 'POST',
+          body: JSON.stringify(refreshToken ? { refreshToken } : {}),
+        }),
       logout: () => request<null>('/api/v1/auth/logout', { method: 'POST' }),
       me: () => request<PublicUser>('/api/v1/auth/me'),
     },

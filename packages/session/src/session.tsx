@@ -38,15 +38,36 @@ interface SessionState {
 
 const SessionContext = createContext<SessionState | null>(null);
 
+/**
+ * Where a refresh token lives when there is no cookie jar.
+ *
+ * Browsers get an httpOnly cookie and never see the token. Native apps have no such thing, so
+ * the API returns the refresh token in the body and the app must store it — in the platform
+ * keychain, not in plain storage. This port exists so the rule about *where* stays a decision
+ * the app makes with its own secure storage, while the rule about *when* stays here.
+ */
+export interface RefreshTokenStore {
+  read(): Promise<string | null>;
+  write(token: string): Promise<void>;
+  clear(): Promise<void>;
+}
+
 export function SessionProvider({
   children,
   baseUrl,
   locale,
+  refreshStore,
 }: {
   children: ReactNode;
   baseUrl: string;
   /** The reader's language, resolved by the app from wherever it keeps that choice. */
   locale?: Locale;
+  /**
+   * Provided by native apps only. Its presence switches the client out of cookie mode: the
+   * API withholds the refresh token from web clients on purpose, and a native app that
+   * pretended to be one would never receive the token it needs to store.
+   */
+  refreshStore?: RefreshTokenStore;
 }) {
   const accessToken = useRef<string | null>(null);
   const [user, setUser] = useState<PublicUser | null>(null);
@@ -67,13 +88,17 @@ export function SessionProvider({
     createApiClient({
       baseUrl,
       locale: locale ?? Locale.UZ_LATN,
-      webClient: true,
+      webClient: !refreshStore,
       getAccessToken: () => accessToken.current,
       onUnauthorized: async (): Promise<string | null> => {
         renewal.current ??= (async (): Promise<string | null> => {
           try {
-            const { data } = await client.current.auth.refresh();
+            const stored = refreshStore ? await refreshStore.read() : null;
+            const { data } = await client.current.auth.refresh(stored ?? undefined);
             accessToken.current = data.accessToken;
+            // The refresh token rotates on every use, so the stored copy must be replaced or
+            // the next renewal presents one the server has already retired.
+            if (refreshStore && data.refreshToken) await refreshStore.write(data.refreshToken);
             if (data.user) setUser(data.user);
             return data.accessToken;
           } catch {
@@ -96,9 +121,16 @@ export function SessionProvider({
     let cancelled = false;
     void (async () => {
       try {
-        const { data } = await client.current.auth.refresh();
+        const stored = refreshStore ? await refreshStore.read() : null;
+        // A native app with nothing stored has never signed in; there is no call to make.
+        if (refreshStore && !stored) {
+          if (!cancelled) setStatus('signed-out');
+          return;
+        }
+        const { data } = await client.current.auth.refresh(stored ?? undefined);
         if (cancelled) return;
         accessToken.current = data.accessToken;
+        if (refreshStore && data.refreshToken) await refreshStore.write(data.refreshToken);
         setUser(data.user ?? null);
         setStatus('signed-in');
       } catch {
@@ -108,11 +140,12 @@ export function SessionProvider({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [refreshStore]);
 
   const signIn = useCallback(async (phone: string, password: string) => {
     const { data } = await client.current.auth.login(phone, password);
     accessToken.current = data.accessToken;
+    if (refreshStore && data.refreshToken) await refreshStore.write(data.refreshToken);
     setUser(data.user ?? null);
     setStatus('signed-in');
   }, []);
@@ -121,6 +154,7 @@ export function SessionProvider({
     async (input: { phone: string; password: string; name: string }) => {
       const { data } = await client.current.auth.register(input);
       accessToken.current = data.accessToken;
+      if (refreshStore && data.refreshToken) await refreshStore.write(data.refreshToken);
       setUser(data.user ?? null);
       setStatus('signed-in');
     },
@@ -137,6 +171,9 @@ export function SessionProvider({
       if (!(error instanceof ApiError)) throw error;
     } finally {
       accessToken.current = null;
+      // Cleared even if the server call failed: a logout that appears to work but leaves the
+      // token on the device is the worst of both answers on a shared phone.
+      if (refreshStore) await refreshStore.clear();
       setUser(null);
       setStatus('signed-out');
     }

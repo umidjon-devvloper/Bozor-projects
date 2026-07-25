@@ -1,1 +1,1 @@
-export { SessionProvider, useSession, useApi } from './session.js';
+export { SessionProvider, useSession, useApi, type RefreshTokenStore } from './session.js';

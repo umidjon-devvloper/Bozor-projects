@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "Bozorlar",
+    "slug": "bozorlar",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "bozorlar",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": { "supportsTablet": false, "bundleIdentifier": "uz.bozorlar.app" },
+    "android": { "package": "uz.bozorlar.app" },
+    "plugins": ["expo-router", "expo-secure-store"],
+    "experiments": { "typedRoutes": true }
+  }
+}
