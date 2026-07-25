@@ -1,6 +1,5 @@
 import type { Request, Response } from 'express';
 import { AppError, ErrorCode } from '@bozorlar/errors';
-import type { Locale } from '@bozorlar/types';
 import { sendCollection, sendCreated, sendData, sendNoContent } from '../../../http/envelope.js';
 import type { GeoService } from '../services/geo.service.js';
 import type { MarketService } from '../services/market.service.js';

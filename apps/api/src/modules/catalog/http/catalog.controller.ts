@@ -1,7 +1,6 @@
 import type { Request, Response } from 'express';
 import { AppError, ErrorCode } from '@bozorlar/errors';
 import { env } from '@bozorlar/config';
-import type { Locale } from '@bozorlar/types';
 import { sendCollection, sendCreated, sendData, sendNoContent } from '../../../http/envelope.js';
 import { Permission } from '../../authz/index.js';
 import type { CategoryService } from '../services/category.service.js';

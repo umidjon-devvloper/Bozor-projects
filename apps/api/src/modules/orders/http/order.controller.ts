@@ -2,7 +2,6 @@ import type { Request, Response } from 'express';
 import { AppError, ErrorCode } from '@bozorlar/errors';
 import { env } from '@bozorlar/config';
 import { CancelActor } from '@bozorlar/domain';
-import type { Locale } from '@bozorlar/types';
 import { sendCollection, sendCreated, sendData } from '../../../http/envelope.js';
 import type { Actor, OrderService } from '../services/order.service.js';
 import type { CancelReasonCode } from '../orders.constants.js';

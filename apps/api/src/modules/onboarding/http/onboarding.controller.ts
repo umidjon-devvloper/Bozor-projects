@@ -1,6 +1,5 @@
 import type { Request, Response } from 'express';
 import { AppError, ErrorCode } from '@bozorlar/errors';
-import type { Locale } from '@bozorlar/types';
 import { sendCollection, sendCreated, sendData, sendNoContent } from '../../../http/envelope.js';
 import { Permission } from '../../authz/index.js';
 import type { OnboardingService, SubmitApplicationCommand } from '../services/onboarding.service.js';
