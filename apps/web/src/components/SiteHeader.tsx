@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import type { Locale } from '@bozorlar/types';
 import { Preferences } from './Preferences';
-import { useApi, useSession } from '@/lib/session';
+import { useApi, useSession } from '@bozorlar/session';
 
 /**
  * The one persistent piece of navigation.

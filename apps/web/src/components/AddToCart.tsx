@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { ApiError, formatQuantity } from '@bozorlar/api-client';
 import type { ProductResponse } from '@bozorlar/contracts';
-import { useApi, useSession } from '@/lib/session';
+import { useApi, useSession } from '@bozorlar/session';
 
 /**
  * Choosing how much, and adding it.

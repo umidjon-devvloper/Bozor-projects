@@ -36,7 +36,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         />
       </head>
       <body>
-        <Providers>
+        <Providers locale={locale}>
           <SiteHeader locale={locale} />
           {children}
         </Providers>

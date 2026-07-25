@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatSom } from '@bozorlar/api-client';
 import type { OrderResponse } from '@bozorlar/contracts';
-import { useApi, useSession } from '@/lib/session';
+import { useApi, useSession } from '@bozorlar/session';
 
 /**
  * The buyer's orders.

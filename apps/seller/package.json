@@ -1,9 +1,9 @@
 {
-  "name": "@bozorlar/web",
+  "name": "@bozorlar/seller",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --port 3001",
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
@@ -11,7 +11,6 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@bozorlar/api-client": "workspace:*",
     "@bozorlar/contracts": "workspace:*",
     "@bozorlar/session": "workspace:*",
     "@bozorlar/types": "workspace:*",
@@ -21,7 +20,8 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwind-merge": "^2.5.4",
-    "zustand": "^5.0.1"
+    "zustand": "^5.0.1",
+    "@bozorlar/api-client": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.7.5",

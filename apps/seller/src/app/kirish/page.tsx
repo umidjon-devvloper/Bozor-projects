@@ -53,8 +53,8 @@ export default function SignInPage() {
       </h1>
       <p className="mt-2 font-body text-sm text-ink/60 dark:text-paper/60">
         {mode === 'signIn'
-          ? "Buyurtma berish uchun telefon raqamingiz bilan kiring."
-          : "Telefon raqamingiz buyurtmani do\u2019kon bilan bog\u2019lash uchun kerak."}
+          ? "Do'kon kabinetiga telefon raqamingiz bilan kiring."
+          : "Sotuvchi hisobi ochish uchun avval ariza topshirish kerak."}
       </p>
 
       <form onSubmit={(event) => void submit(event)} className="mt-8 space-y-4">
@@ -88,7 +88,7 @@ export default function SignInPage() {
         <button
           type="submit"
           disabled={busy}
-          className="w-full rounded-stall bg-tile px-4 py-3 font-display text-sm font-medium text-paper transition-colors hover:bg-tile-deep disabled:opacity-60"
+          className="w-full rounded-stall bg-saffron px-4 py-3 font-display text-sm font-medium text-ink transition-colors hover:bg-saffron-deep disabled:opacity-60"
         >
           {busy ? 'Kutib turing…' : mode === 'signIn' ? 'Kirish' : "Ro\u2019yxatdan o\u2019tish"}
         </button>
@@ -100,7 +100,7 @@ export default function SignInPage() {
           setMode(mode === 'signIn' ? 'register' : 'signIn');
           setError(null);
         }}
-        className="mt-6 font-body text-sm text-tile underline-offset-4 hover:underline dark:text-tile-light"
+        className="mt-6 font-body text-sm text-saffron-deep underline-offset-4 hover:underline dark:text-saffron-deep-light"
       >
         {mode === 'signIn' ? "Hisobim yo\u2019q — ro\u2019yxatdan o\u2019taman" : 'Hisobim bor — kiraman'}
       </button>

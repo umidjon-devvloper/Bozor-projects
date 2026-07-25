@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { ApiError, formatSom } from '@bozorlar/api-client';
 import type { QuoteResponse } from '@bozorlar/contracts';
-import { useApi, useSession } from '@/lib/session';
+import { useApi, useSession } from '@bozorlar/session';
 
 /**
  * Checkout: confirm what each stall will hand over, then order.

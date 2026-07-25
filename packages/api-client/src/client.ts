@@ -265,6 +265,38 @@ export function createApiClient(options: ApiClientOptions) {
         request<PublicUser>('/api/v1/auth/me', { method: 'PATCH', body: JSON.stringify(input) }),
     },
 
+    seller: {
+      orders: {
+        list: (query: { status?: string; limit?: number } = {}) =>
+          request<OrderResponse[]>('/api/v1/seller/orders', { query }),
+        accept: (id: string) =>
+          request<OrderResponse>(`/api/v1/seller/orders/${id}/accept`, { method: 'POST' }),
+        reject: (id: string, reasonCode: string, reason: string) =>
+          request<OrderResponse>(`/api/v1/seller/orders/${id}/reject`, {
+            method: 'POST',
+            body: JSON.stringify({ reasonCode, reason }),
+          }),
+        preparing: (id: string) =>
+          request<OrderResponse>(`/api/v1/seller/orders/${id}/preparing`, { method: 'POST' }),
+        ready: (id: string) =>
+          request<OrderResponse>(`/api/v1/seller/orders/${id}/ready`, { method: 'POST' }),
+        /** Six digits, shown by the buyer at the stall. Attempts are capped server-side. */
+        verifyPickup: (id: string, code: string) =>
+          request<OrderResponse>(`/api/v1/seller/orders/${id}/verify-pickup`, {
+            method: 'POST',
+            body: JSON.stringify({ code }),
+          }),
+      },
+      products: {
+        list: (query: { limit?: number } = {}) =>
+          request<ProductResponse[]>('/api/v1/seller/products', { query }),
+      },
+      wallet: () =>
+        request<{ balance: { amount: string; currency: 'UZS' }; state: string }>(
+          '/api/v1/seller/wallet',
+        ),
+    },
+
     geo: {
       regions: () => request<RegionResponse[]>('/api/v1/geo/regions'),
       districts: (regionId: string) =>

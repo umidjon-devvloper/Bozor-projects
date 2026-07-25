@@ -3,7 +3,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 import { ApiError } from '@bozorlar/api-client';
-import { SessionProvider } from '@/lib/session';
+import { SessionProvider } from '@bozorlar/session';
+import type { Locale } from '@bozorlar/types';
 
 /**
  * Query defaults tuned for a marketplace on a slow connection.
@@ -13,7 +14,7 @@ import { SessionProvider } from '@/lib/session';
  * minute behind the stall. Retrying a 4xx is pointless and doubles the wait before an error is
  * shown, so only retryable failures are retried at all.
  */
-export function Providers({ children }: { children: ReactNode }) {
+export function Providers({ children, locale }: { children: ReactNode; locale: Locale }) {
   const [client] = useState(
     () =>
       new QueryClient({
@@ -31,7 +32,12 @@ export function Providers({ children }: { children: ReactNode }) {
 
   return (
     <QueryClientProvider client={client}>
-      <SessionProvider>{children}</SessionProvider>
+      <SessionProvider
+        baseUrl={process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'}
+        locale={locale}
+      >
+        {children}
+      </SessionProvider>
     </QueryClientProvider>
   );
 }

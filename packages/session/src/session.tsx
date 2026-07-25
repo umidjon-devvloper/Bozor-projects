@@ -1,5 +1,14 @@
 'use client';
 
+/**
+ * Shared by every browser client this platform ships.
+ *
+ * Extracted from the marketplace when the seller dashboard needed the same thing. Duplicating
+ * it would have meant two copies of the rule that keeps a session out of readable storage, and
+ * of the deduplication that stops a single-use refresh token being rotated by six callers at
+ * once — the two pieces here where a divergence is a security bug rather than an inconsistency.
+ */
+
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ApiError, createApiClient, type ApiClient, type PublicUser } from '@bozorlar/api-client';
@@ -29,7 +38,16 @@ interface SessionState {
 
 const SessionContext = createContext<SessionState | null>(null);
 
-export function SessionProvider({ children }: { children: ReactNode }) {
+export function SessionProvider({
+  children,
+  baseUrl,
+  locale,
+}: {
+  children: ReactNode;
+  baseUrl: string;
+  /** The reader's language, resolved by the app from wherever it keeps that choice. */
+  locale?: Locale;
+}) {
   const accessToken = useRef<string | null>(null);
   const [user, setUser] = useState<PublicUser | null>(null);
   const [status, setStatus] = useState<SessionState['status']>('loading');
@@ -47,8 +65,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   // the compiler cannot resolve a value defined in terms of itself.
   const client = useRef<ApiClient>(
     createApiClient({
-      baseUrl: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000',
-      locale: Locale.UZ_LATN,
+      baseUrl,
+      locale: locale ?? Locale.UZ_LATN,
       webClient: true,
       getAccessToken: () => accessToken.current,
       onUnauthorized: async (): Promise<string | null> => {

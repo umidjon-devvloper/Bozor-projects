@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApiError, formatSom } from '@bozorlar/api-client';
-import { useApi, useSession } from '@/lib/session';
+import { useApi, useSession } from '@bozorlar/session';
 
 /**
  * One order, in full — and the place a dispute is raised.

@@ -6,7 +6,7 @@ import { Suspense, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { formatSom } from '@bozorlar/api-client';
 import type { SearchHit } from '@bozorlar/api-client';
-import { useApi } from '@/lib/session';
+import { useApi } from '@bozorlar/session';
 
 /**
  * Search across every stall in the republic.

@@ -42,6 +42,15 @@
     },
     {
       "path": "apps/worker"
+    },
+    {
+      "path": "packages/session"
+    },
+    {
+      "path": "apps/web"
+    },
+    {
+      "path": "apps/seller"
     }
   ]
 }
