@@ -249,7 +249,7 @@ export function createApiClient(options: ApiClientOptions) {
 
   async function request<T>(
     path: string,
-    init: RequestInit & { query?: Record<string, string | number | undefined> } = {},
+    init: RequestInit & { query?: Record<string, string | number | undefined> | undefined } = {},
   ): Promise<ApiEnvelope<T>> {
     const url = new URL(`${options.baseUrl.replace(/\/$/, '')}${path}`);
     for (const [key, value] of Object.entries(init.query ?? {})) {
@@ -390,7 +390,7 @@ export function createApiClient(options: ApiClientOptions) {
           headers: { 'Idempotency-Key': idempotencyKey },
           body: JSON.stringify(note ? { quoteId, note } : { quoteId }),
         }),
-      list: (query: { limit?: number; cursor?: string } = {}) =>
+      list: (query: { limit?: number | undefined; cursor?: string | undefined } = {}) =>
         request<OrderResponse[]>('/api/v1/orders', { query }),
       get: (id: string) => request<OrderResponse>(`/api/v1/orders/${id}`),
       confirm: (id: string) =>
@@ -413,7 +413,7 @@ export function createApiClient(options: ApiClientOptions) {
 
     seller: {
       orders: {
-        list: (query: { status?: string; limit?: number } = {}) =>
+        list: (query: { status?: string | undefined; limit?: number | undefined } = {}) =>
           request<OrderResponse[]>('/api/v1/seller/orders', { query }),
         accept: (id: string) =>
           request<OrderResponse>(`/api/v1/seller/orders/${id}/accept`, { method: 'POST' }),
@@ -434,11 +434,11 @@ export function createApiClient(options: ApiClientOptions) {
           }),
       },
       products: {
-        list: (query: { limit?: number } = {}) =>
+        list: (query: { limit?: number | undefined } = {}) =>
           request<ProductResponse[]>('/api/v1/seller/products', { query }),
       },
       wallet: () => request<SellerWallet>('/api/v1/seller/wallet'),
-      statement: (query: { limit?: number } = {}) =>
+      statement: (query: { limit?: number | undefined } = {}) =>
         request<{ entries: SellerStatementEntry[] }>('/api/v1/seller/wallet/statement', { query }),
       setPrice: (productId: string, price: string) =>
         request<ProductResponse>(`/api/v1/seller/products/${productId}/price`, {
@@ -450,15 +450,15 @@ export function createApiClient(options: ApiClientOptions) {
           method: 'PATCH',
           body: JSON.stringify({ stockQty }),
         }),
-      report: (query: { from?: string; to?: string } = {}) =>
+      report: (query: { from?: string | undefined; to?: string | undefined } = {}) =>
         request<SellerStatement>('/api/v1/seller/reports/statement', { query }),
     },
 
     admin: {
-      overview: (query: { from?: string; to?: string } = {}) =>
+      overview: (query: { from?: string | undefined; to?: string | undefined } = {}) =>
         request<AdminOverview>('/api/v1/admin/reports/overview', { query }),
       moderation: () => request<ModerationQueues>('/api/v1/admin/reports/moderation'),
-      sellers: (query: { from?: string; to?: string; page?: number } = {}) =>
+      sellers: (query: { from?: string | undefined; to?: string | undefined; page?: number | undefined } = {}) =>
         request<{ sellers: AdminSellerRow[] }>('/api/v1/admin/reports/sellers', { query }),
       commissionRules: {
         list: () => request<CommissionRule[]>('/api/v1/admin/commission-rules'),
@@ -477,9 +477,9 @@ export function createApiClient(options: ApiClientOptions) {
             body: JSON.stringify(input),
           }),
       },
-      productQueue: (query: { limit?: number } = {}) =>
+      productQueue: (query: { limit?: number | undefined } = {}) =>
         request<ProductResponse[]>('/api/v1/admin/products/moderation-queue', { query }),
-      applications: (query: { status?: string; limit?: number } = {}) =>
+      applications: (query: { status?: string | undefined; limit?: number | undefined } = {}) =>
         request<SellerApplication[]>('/api/v1/admin/seller-applications', { query }),
       claimApplication: (id: string) =>
         request<SellerApplication>(`/api/v1/admin/seller-applications/${id}/claim`, { method: 'POST' }),
@@ -490,7 +490,7 @@ export function createApiClient(options: ApiClientOptions) {
           method: 'POST',
           body: JSON.stringify({ reason }),
         }),
-      disputes: (query: { status?: string; limit?: number } = {}) =>
+      disputes: (query: { status?: string | undefined; limit?: number | undefined } = {}) =>
         request<AdminDispute[]>('/api/v1/admin/disputes', { query }),
       resolveDispute: (id: string, outcome: string, reason: string, refundAmount?: string) =>
         request<AdminDispute>(`/api/v1/admin/disputes/${id}/resolve`, {
@@ -526,7 +526,7 @@ export function createApiClient(options: ApiClientOptions) {
           method: 'POST',
           body: JSON.stringify(input),
         }),
-      shopQueue: (query: { limit?: number } = {}) =>
+      shopQueue: (query: { limit?: number | undefined } = {}) =>
         request<ShopResponse[]>('/api/v1/admin/shops/moderation-queue', { query }),
       moderateReview: (id: string, hide: boolean, reason: string) =>
         request<unknown>(`/api/v1/admin/reviews/${id}/moderate`, {
@@ -576,39 +576,39 @@ export function createApiClient(options: ApiClientOptions) {
     },
 
     markets: {
-      list: (query: { regionId?: string; districtId?: string; limit?: number } = {}) =>
+      list: (query: { regionId?: string | undefined; districtId?: string | undefined; limit?: number | undefined } = {}) =>
         request<MarketResponse[]>('/api/v1/markets', { query }),
       get: (idOrSlug: string) => request<MarketResponse>(`/api/v1/markets/${idOrSlug}`),
     },
 
     shops: {
-      list: (query: { marketId?: string; limit?: number; cursor?: string } = {}) =>
+      list: (query: { marketId?: string | undefined; limit?: number | undefined; cursor?: string | undefined } = {}) =>
         request<ShopResponse[]>('/api/v1/shops', { query }),
-      inMarket: (marketId: string, query: { limit?: number; cursor?: string } = {}) =>
+      inMarket: (marketId: string, query: { limit?: number | undefined; cursor?: string | undefined } = {}) =>
         request<ShopResponse[]>(`/api/v1/markets/${marketId}/shops`, { query }),
       get: (idOrSlug: string) => request<ShopResponse>(`/api/v1/shops/${idOrSlug}`),
     },
 
     products: {
-      list: (query: { shopId?: string; categoryId?: string; limit?: number; cursor?: string } = {}) =>
+      list: (query: { shopId?: string | undefined; categoryId?: string | undefined; limit?: number | undefined; cursor?: string | undefined } = {}) =>
         request<ProductResponse[]>('/api/v1/products', { query }),
       get: (idOrSlug: string) => request<ProductResponse>(`/api/v1/products/${idOrSlug}`),
     },
 
     search: {
       products: (query: {
-        q?: string;
-        marketId?: string;
-        inStockOnly?: string;
-        sort?: string;
-        page?: number;
-        perPage?: number;
+        q?: string | undefined;
+        marketId?: string | undefined;
+        inStockOnly?: string | undefined;
+        sort?: string | undefined;
+        page?: number | undefined;
+        perPage?: number | undefined;
       }) => request<SearchResults>('/api/v1/search/products', { query }),
       suggest: (q: string) => request<{ suggestions: string[] }>('/api/v1/search/suggest', { query: { q } }),
     },
 
     favourites: {
-      products: (query: { limit?: number; cursor?: string } = {}) =>
+      products: (query: { limit?: number | undefined; cursor?: string | undefined } = {}) =>
         request<FavouriteProductView[]>('/api/v1/favourites/products', { query }),
       add: (targetType: 'PRODUCT' | 'SHOP', targetId: string) =>
         request<{ id: string }>('/api/v1/favourites', {
