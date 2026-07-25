@@ -55,7 +55,7 @@ export function createReviewController(reviews: ReviewService) {
     // ---- public ----
     async listForProduct(req: Request, res: Response): Promise<void> {
       const productId = requireParam(req.params.id, 'Product');
-      const page = await reviews.listForProduct(productId, req.query as Record<string, unknown>);
+      const page = await reviews.listForProduct(productId, req.query);
       res.setHeader('Cache-Control', 'public, max-age=120, stale-while-revalidate=600');
       sendCollection(
         res,
@@ -72,7 +72,7 @@ export function createReviewController(reviews: ReviewService) {
 
     async listForShop(req: Request, res: Response): Promise<void> {
       const shopId = requireParam(req.params.id, 'Shop');
-      const page = await reviews.listForShop(shopId, req.query as Record<string, unknown>);
+      const page = await reviews.listForShop(shopId, req.query);
       res.setHeader('Cache-Control', 'public, max-age=120, stale-while-revalidate=600');
       sendCollection(
         res,

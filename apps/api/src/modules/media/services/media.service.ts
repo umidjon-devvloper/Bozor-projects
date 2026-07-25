@@ -4,9 +4,10 @@ import { AppError, ErrorCode, notFound } from '@bozorlar/errors';
 import type { Logger } from '@bozorlar/logger';
 import { ActorType, AuditSeverity } from '@bozorlar/types';
 import type { AuditService } from '../../audit/index.js';
+import type {
+  MediaPurpose} from '../media.constants.js';
 import {
   DOWNLOAD_URL_TTL_SECONDS,
-  MediaPurpose,
   MediaVisibility,
   PURPOSE_POLICIES,
   UNATTACHED_TTL_HOURS,

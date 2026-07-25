@@ -9,12 +9,13 @@ import { MediaPurpose, type MediaService } from '../../media/index.js';
 import { parseQuery, toPage, type Page, type QuerySpec } from '../../../http/query.js';
 import { reviewRepository, type ReviewRecord } from '../repositories/review.repository.js';
 import { ratingAggregation } from './ratingAggregation.service.js';
+import type {
+  ReportReason} from '../reviews.constants.js';
 import {
   AUTO_REPORT_THRESHOLD,
   COUNTED_STATUSES,
   MAX_REVIEW_PHOTOS,
   REVIEW_WINDOW_DAYS,
-  ReportReason,
   ReviewStatus,
 } from '../reviews.constants.js';
 import { ReviewEvents } from '../events.js';

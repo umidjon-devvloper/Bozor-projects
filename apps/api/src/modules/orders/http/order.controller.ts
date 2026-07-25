@@ -19,7 +19,7 @@ function requireParam(value: string | undefined, name: string): string {
 }
 
 function options(req: Request, isSeller: boolean): ViewOptions {
-  return { locale: req.locale as Locale, cdnBaseUrl: env.CDN_BASE_URL, isSeller };
+  return { locale: req.locale, cdnBaseUrl: env.CDN_BASE_URL, isSeller };
 }
 
 export function createOrderController(orders: OrderService) {
@@ -52,7 +52,7 @@ export function createOrderController(orders: OrderService) {
 
     async list(req: Request, res: Response): Promise<void> {
       const actor = requireAuth(req);
-      const page = await orders.listForBuyer(req.query as Record<string, unknown>, actor.userId);
+      const page = await orders.listForBuyer(req.query, actor.userId);
       noStore(res);
       sendCollection(
         res,
@@ -118,7 +118,7 @@ export function createOrderController(orders: OrderService) {
     // ---- seller ----
     async sellerList(req: Request, res: Response): Promise<void> {
       const actor = requireAuth(req);
-      const page = await orders.listForSeller(req.query as Record<string, unknown>, actor);
+      const page = await orders.listForSeller(req.query, actor);
       noStore(res);
       sendCollection(
         res,

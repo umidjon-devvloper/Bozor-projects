@@ -18,6 +18,21 @@ module.exports = {
   extends: ['eslint:recommended', 'plugin:@typescript-eslint/recommended-type-checked'],
   ignorePatterns: ['dist', 'node_modules', '*.cjs'],
   rules: {
+    /**
+     * Express 4 ignores whatever a handler returns, and this codebase depends on that:
+     * `rateLimit`, `auth` and `validate` are all async middleware, and `asyncHandler` exists
+     * precisely to catch what they reject with. Checking void-returning *arguments* therefore
+     * flags the intended pattern at every route registration rather than any defect. Returns
+     * in other positions are still checked.
+     */
+    '@typescript-eslint/no-misused-promises': ['error', { checksVoidReturn: { arguments: false } }],
+    /**
+     * Controllers are object literals of arrow functions returned by a factory, so they carry
+     * no `this` binding and passing them to a router by reference is safe. The rule cannot see
+     * that through the factory and fires on every route.
+     */
+    '@typescript-eslint/unbound-method': 'off',
+
     '@typescript-eslint/no-explicit-any': 'error',
     '@typescript-eslint/no-non-null-assertion': 'error',
     '@typescript-eslint/no-floating-promises': 'error',

@@ -1,11 +1,12 @@
 import { AppError, ErrorCode } from '@bozorlar/errors';
 import { DEFAULT_LOCALE, type Locale } from '@bozorlar/types';
+import type {
+  NotificationCategory} from './constants.js';
 import {
   Channel,
   DEAD_TOKEN_ERRORS,
   DeliveryStatus,
   MAX_PUSH_TOKENS_PER_SEND,
-  NotificationCategory,
   QUIET_HOURS_END,
   QUIET_HOURS_START,
   RETRYABLE_PROVIDER_ERRORS,

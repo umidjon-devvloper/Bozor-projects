@@ -1,4 +1,4 @@
-import { Types } from 'mongoose';
+import type { Types } from 'mongoose';
 import type { Logger } from '@bozorlar/logger';
 import { RegionModel } from '../modules/geo/models/region.model.js';
 import { DistrictModel } from '../modules/geo/models/district.model.js';

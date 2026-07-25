@@ -100,7 +100,7 @@ export function createDisputeController(disputes: DisputeService) {
 
     async listMine(req: Request, res: Response): Promise<void> {
       const actor = requireAuth(req);
-      const page = await disputes.listForBuyer(req.query as Record<string, unknown>, actor.userId);
+      const page = await disputes.listForBuyer(req.query, actor.userId);
       noStore(res);
       sendCollection(
         res,
@@ -130,7 +130,7 @@ export function createDisputeController(disputes: DisputeService) {
     // ---- seller ----
     async listForShop(req: Request, res: Response): Promise<void> {
       const actor = requireAuth(req);
-      const page = await disputes.listForSeller(req.query as Record<string, unknown>, actor);
+      const page = await disputes.listForSeller(req.query, actor);
       noStore(res);
       sendCollection(
         res,
@@ -149,7 +149,7 @@ export function createDisputeController(disputes: DisputeService) {
 
     // ---- moderation ----
     async queue(req: Request, res: Response): Promise<void> {
-      const page = await disputes.listForModeration(req.query as Record<string, unknown>);
+      const page = await disputes.listForModeration(req.query);
       noStore(res);
       sendCollection(
         res,

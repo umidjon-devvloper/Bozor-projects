@@ -1,6 +1,7 @@
 import { Types, type ClientSession } from 'mongoose';
 import { Money } from '@bozorlar/money';
-import { DisputeOutcome, DisputeStatus } from '@bozorlar/domain';
+import type { DisputeOutcome} from '@bozorlar/domain';
+import { DisputeStatus } from '@bozorlar/domain';
 import {
   DisputeModel,
   type DisputeDoc,

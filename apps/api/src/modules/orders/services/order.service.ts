@@ -2,7 +2,8 @@ import { createHash } from 'node:crypto';
 import mongoose from 'mongoose';
 import { AppError, ErrorCode, notFound } from '@bozorlar/errors';
 import type { Logger } from '@bozorlar/logger';
-import { Money, Quantity } from '@bozorlar/money';
+import type { Money} from '@bozorlar/money';
+import { Quantity } from '@bozorlar/money';
 import {
   CancelActor,
   OrderStatus,
@@ -303,7 +304,7 @@ export function createOrderService(deps: {
               paymentId: null,
               totals: groupTotals,
               buyerSnapshot: buyer,
-            } as never,
+            },
             session,
           );
 
@@ -762,7 +763,7 @@ export function createOrderService(deps: {
               newTotal: newItemsTotal,
               requestedBy: new mongoose.Types.ObjectId(actor.userId),
               expiresAt: new Date(now.getTime() + ADJUSTMENT_RESPONSE_MINUTES * 60 * 1000),
-            } as never,
+            },
             session,
           );
           await outboxService.publish(

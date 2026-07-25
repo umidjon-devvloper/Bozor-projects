@@ -1,4 +1,4 @@
-import { Types } from 'mongoose';
+import type { Types } from 'mongoose';
 import type { Logger } from '@bozorlar/logger';
 import { CategoryModel } from '../modules/catalog/models/category.model.js';
 import { UnitModel } from '../modules/catalog/models/unit.model.js';

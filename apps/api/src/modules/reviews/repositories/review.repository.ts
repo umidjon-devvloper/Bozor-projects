@@ -1,6 +1,7 @@
 import { Types, type ClientSession } from 'mongoose';
 import { ReviewModel, type ReviewDoc, type ReviewPhoto } from '../models/review.model.js';
-import { COUNTED_STATUSES, ReportReason, ReviewStatus } from '../reviews.constants.js';
+import type { ReportReason} from '../reviews.constants.js';
+import { COUNTED_STATUSES, ReviewStatus } from '../reviews.constants.js';
 import type { ParsedQuery } from '../../../http/query.js';
 
 export interface ReviewRecord {

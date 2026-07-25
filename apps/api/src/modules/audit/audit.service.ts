@@ -1,5 +1,6 @@
 import { Types } from 'mongoose';
-import { ActorType, AuditSeverity } from '@bozorlar/types';
+import type { ActorType} from '@bozorlar/types';
+import { AuditSeverity } from '@bozorlar/types';
 import { getContext, type Logger } from '@bozorlar/logger';
 import { AuditLogModel } from './audit.model.js';
 

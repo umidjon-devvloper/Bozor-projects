@@ -1,5 +1,5 @@
 import mongoose, { Types, type ClientSession } from 'mongoose';
-import { Quantity } from '@bozorlar/money';
+import type { Quantity } from '@bozorlar/money';
 import { StockReservationModel, type StockReservationDoc } from '../models/stockReservation.model.js';
 import { ReservationStatus } from '../checkout.constants.js';
 

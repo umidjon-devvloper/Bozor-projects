@@ -17,7 +17,7 @@ function requireParam(value: string | undefined, name: string): string {
 }
 
 function viewOptions(req: Request, privileged: boolean): ViewOptions {
-  return { locale: req.locale as Locale, raw: req.query.raw === 'true', privileged };
+  return { locale: req.locale, raw: req.query.raw === 'true', privileged };
 }
 
 export function createOnboardingController(onboarding: OnboardingService) {
@@ -59,7 +59,7 @@ export function createOnboardingController(onboarding: OnboardingService) {
 
     // ---- moderation ----
     async list(req: Request, res: Response): Promise<void> {
-      const page = await onboarding.list(req.query as Record<string, unknown>);
+      const page = await onboarding.list(req.query);
       sendCollection(
         res,
         page.items.map((application) => toApplicationResponse(application, viewOptions(req, true))),

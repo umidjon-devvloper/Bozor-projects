@@ -2,8 +2,9 @@ import mongoose from 'mongoose';
 import { AppError, ErrorCode, notFound } from '@bozorlar/errors';
 import type { Logger } from '@bozorlar/logger';
 import { Money } from '@bozorlar/money';
+import type {
+  DisputeOutcome} from '@bozorlar/domain';
 import {
-  DisputeOutcome,
   DisputeStatus,
   OrderStatus,
   canTransitionDispute,

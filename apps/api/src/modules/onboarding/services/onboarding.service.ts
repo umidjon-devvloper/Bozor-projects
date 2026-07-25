@@ -8,10 +8,11 @@ import type { AuditService } from '../../audit/index.js';
 import { MediaPurpose, type MediaService } from '../../media/index.js';
 import { userShopLinkService } from '../../identity/index.js';
 import { parseQuery, toPage, type Page, type QuerySpec } from '../../../http/query.js';
+import type {
+  DocumentType} from '../onboarding.constants.js';
 import {
   APPLICATION_TRANSITIONS,
   ApplicationStatus,
-  DocumentType,
   MAX_DOCUMENTS,
   MAX_RESUBMISSIONS,
   REQUIRED_DOCUMENTS,

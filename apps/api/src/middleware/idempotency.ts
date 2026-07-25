@@ -41,7 +41,7 @@ export function idempotency(deps: { logger: Logger }) {
     const endpoint = `${req.method} ${req.baseUrl}${req.route?.path ?? req.path}`;
     const requestHash = hashBody(req.body);
 
-    let record = await IdempotencyKeyModel.findOne({ key, userId }).lean<{
+    const record = await IdempotencyKeyModel.findOne({ key, userId }).lean<{
       requestHash: string;
       state: string;
       responseStatus: number | null;
@@ -102,7 +102,7 @@ export function idempotency(deps: { logger: Logger }) {
             $set: {
               state: 'COMPLETED',
               responseStatus: res.statusCode,
-              responseBody: body as Record<string, unknown>,
+              responseBody: body,
             },
           },
         ).catch((error: unknown) => {

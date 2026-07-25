@@ -28,7 +28,7 @@ function requireParam(value: string | undefined, name: string): string {
 
 function options(req: Request, privileged: boolean): ViewOptions {
   return {
-    locale: req.locale as Locale,
+    locale: req.locale,
     raw: req.query.raw === 'true',
     privileged,
     cdnBaseUrl: env.CDN_BASE_URL,
@@ -73,7 +73,7 @@ export function createCatalogController(deps: {
 
     // ---- public catalogue ----
     async listProducts(req: Request, res: Response): Promise<void> {
-      const page = await products.listPublic(req.query as Record<string, unknown>);
+      const page = await products.listPublic(req.query);
       res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
       sendCollection(
         res,
@@ -100,7 +100,7 @@ export function createCatalogController(deps: {
     // ---- seller ----
     async listMyProducts(req: Request, res: Response): Promise<void> {
       const auth = requireAuth(req);
-      const page = await products.listForSeller(req.query as Record<string, unknown>, auth.shopIds);
+      const page = await products.listForSeller(req.query, auth.shopIds);
       sendCollection(
         res,
         page.items.map((product) => toProductResponse(product, options(req, true))),

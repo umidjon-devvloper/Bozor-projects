@@ -18,7 +18,7 @@ function requireParam(value: string | undefined, name: string): string {
 }
 
 function options(req: Request): ViewOptions {
-  return { locale: req.locale as Locale, cdnBaseUrl: env.CDN_BASE_URL };
+  return { locale: req.locale, cdnBaseUrl: env.CDN_BASE_URL };
 }
 
 export function createCheckoutController(deps: { cart: CartService; quotes: QuoteService }) {

@@ -15,7 +15,7 @@ import {
 } from './mappers.js';
 
 function viewOptions(req: Request): ViewOptions {
-  return { locale: req.locale as Locale, raw: req.query.raw === 'true' };
+  return { locale: req.locale, raw: req.query.raw === 'true' };
 }
 
 function shopViewer(req: Request, shopId: string | null): ShopViewerContext {
@@ -66,7 +66,7 @@ export function createGeoController(deps: {
     // ---- public markets ----
     async listMarkets(req: Request, res: Response): Promise<void> {
       const options = viewOptions(req);
-      const page = await geo.listMarkets(req.query as Record<string, unknown>);
+      const page = await geo.listMarkets(req.query);
       res.setHeader('Cache-Control', 'public, max-age=900, stale-while-revalidate=3600');
       sendCollection(
         res,
@@ -108,7 +108,7 @@ export function createGeoController(deps: {
 
     // ---- public shops ----
     async listShops(req: Request, res: Response): Promise<void> {
-      const page = await shops.listPublic(req.query as Record<string, unknown>);
+      const page = await shops.listPublic(req.query);
       sendCollection(
         res,
         page.items.map((shop) => toShopResponse(shop, shopViewer(req, shop.id))),

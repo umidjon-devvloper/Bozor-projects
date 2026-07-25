@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
-import { z, type ZodTypeAny } from 'zod';
+import type { z} from 'zod';
+import { type ZodTypeAny } from 'zod';
 import { AppError, ErrorCode, type FieldError, validationFailed } from '@bozorlar/errors';
 
 type Target = 'body' | 'query' | 'params';
