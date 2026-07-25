@@ -20,7 +20,9 @@ export function AdminHeader() {
             <Tab href="/" active={pathname === '/'}>Ko'rsatkichlar</Tab>
             <Tab href="/navbatlar" active={pathname.startsWith('/navbatlar')}>Navbatlar</Tab>
             <Tab href="/dokonlar" active={pathname.startsWith('/dokonlar')}>Do'konlar</Tab>
+            <Tab href="/hisoblar" active={pathname.startsWith('/hisoblar')}>Hisoblar</Tab>
             <Tab href="/komissiya" active={pathname.startsWith('/komissiya')}>Komissiya</Tab>
+            <Tab href="/tizim" active={pathname.startsWith('/tizim')}>Tizim</Tab>
             <button
               type="button"
               onClick={() => void signOut()}

@@ -463,6 +463,42 @@ export function createApiClient(options: ApiClientOptions) {
           method: 'POST',
           body: JSON.stringify(refundAmount ? { outcome, reason, refundAmount } : { outcome, reason }),
         }),
+      wallet: (sellerId: string) => request<SellerWallet>(`/api/v1/admin/wallets/${sellerId}`),
+      reconcileWallet: (sellerId: string) =>
+        request<{ stored: { amount: string }; computed: { amount: string }; matches: boolean }>(
+          `/api/v1/admin/wallets/${sellerId}/reconcile`,
+          { method: 'POST' },
+        ),
+      setThresholds: (
+        sellerId: string,
+        input: { lowBalanceThreshold?: string; deactivateBelow?: string; graceHours?: number },
+      ) =>
+        request<SellerWallet>(`/api/v1/admin/wallets/${sellerId}/thresholds`, {
+          method: 'PATCH',
+          body: JSON.stringify(input),
+        }),
+      /**
+       * A manual movement. `approvedBy` is required above the dual-control threshold and must
+       * be a different administrator — the server rejects self-approval.
+       */
+      adjust: (input: {
+        sellerId: string;
+        amount: string;
+        direction: 'CREDIT' | 'DEBIT';
+        reason: string;
+        approvedBy?: string;
+      }) =>
+        request<SellerWallet>('/api/v1/admin/ledger/adjustments', {
+          method: 'POST',
+          body: JSON.stringify(input),
+        }),
+      moderateShop: (id: string, approved: boolean, reason?: string) =>
+        request<unknown>(`/api/v1/admin/shops/${id}/moderate`, {
+          method: 'POST',
+          body: JSON.stringify(reason ? { approved, reason } : { approved }),
+        }),
+      searchHealth: () => request<{ healthy: boolean; collections?: unknown }>('/api/v1/admin/search/health'),
+      reindex: () => request<{ accepted: boolean }>('/api/v1/admin/search/reindex', { method: 'POST' }),
       moderateProduct: (id: string, approved: boolean, reason?: string) =>
         request<unknown>(`/api/v1/admin/products/${id}/moderate`, {
           method: 'POST',
