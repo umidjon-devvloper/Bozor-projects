@@ -661,3 +661,40 @@ and they never go to SMS — and a third will trip it again.
 **Not verified:** the integration path. The alert policy is pure and covered from both
 directions, but the fan-out's paging and the compare-and-set have been reasoned about rather
 than executed — `pnpm --filter @bozorlar/api test:int` needs Docker for the replica set.
+
+---
+
+# 2026-07-25 — Admin reporting
+
+Platform overview, seller leaderboard, moderation queue depths, and commission statements for
+both administrators and sellers. Read-only: the module owns no collection and writes nothing.
+
+**Money comes from the ledger, not from `orders.commission`** (**ADR-0035**). The order says what
+was meant to be charged; the journal says what was posted, and they diverge exactly when
+something went wrong — a failed charge, a reversal after a dispute. Those are the cases a
+statement exists to show. GMV is the deliberate exception: it is a claim about goods sold, so it
+comes from completed orders.
+
+**Periods are half-open**, so adjacent windows tile and a month of daily reports sums exactly to
+the monthly one. That is what makes a statement checkable rather than merely plausible.
+
+**Nothing is precomputed.** Every figure is aggregated from the source collections, bounded by
+the period and capped at 366 days, because the range is the cost. A rollup would be a second
+source of truth to keep correct, and a wrong rollup is harder to notice than a slow query. When
+volume demands it, the pipelines here are the shape to build one from.
+
+**Smaller calls:**
+- Completion rate is measured against *decided* orders only. Including those still in flight
+  would report a rate that rises on its own as the day settles.
+- The seller leaderboard ranks by sales and carries the dispute rate beside it, because the
+  second number is what says whether the ranking should be believed.
+- Queue depth is reported with the age of its oldest item. A queue of two where one has waited
+  five days is a worse state than a queue of forty opened this morning.
+- The seller statement takes its shop set from the token; there is no parameter through which
+  to ask about somebody else's takings.
+- Money that cannot be read exactly throws rather than defaulting. In a financial report a
+  plausible zero is worse than a stopped report.
+
+23 new unit tests, all on the two pure functions. Build 15/15, typecheck 28/28, **324 tests**.
+Module boundaries clean; the aggregations themselves are still unverified against a real
+database, like every module since notifications.

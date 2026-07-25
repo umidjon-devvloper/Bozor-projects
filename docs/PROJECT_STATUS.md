@@ -342,10 +342,21 @@ been waiting for since Phase 3.
 - Adding a favourite is an upsert; a repeat tap cannot reset a watermark.
 - A drop must clear both a 5% and a 1 000 som floor; a 24-hour cooldown bounds both alert kinds.
 
+### Admin reporting ✅
+Read-only reports over data every module already writes. Owns no collection.
+- **Money from the journal, not from `orders.commission`** (ADR-0035). The two diverge exactly
+  when something went wrong, which is what a statement is for. GMV stays order-derived.
+- **Half-open periods**, so a month of daily reports sums to the monthly one.
+- **Nothing precomputed**; every figure aggregated within a capped window. A rollup is a
+  performance change for later, not a correctness one.
+- Completion rate against decided orders; dispute rate beside the sales ranking; queue depth
+  reported with the age of its oldest item.
+- Seller statements are scoped by token, not by parameter.
+
 ## Verified
 - **The entire workspace typechecks clean** under `strict`, `noUncheckedIndexedAccess` and
   `exactOptionalPropertyTypes` — 28/28 turbo tasks
-- Unit suites: **301/301 passing** (282 in `apps/api`, 12 money, 7 errors)
+- Unit suites: **324/324 passing** (305 in `apps/api`, 12 money, 7 errors)
 - Build: 15/15 turbo tasks
 - Integration suites are **not** run in CI yet; they require Docker for the MongoDB replica set
 

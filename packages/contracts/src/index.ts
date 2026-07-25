@@ -11,5 +11,6 @@ export * from './wallet/schemas.js';
 export * from './notifications/schemas.js';
 export * from './search/schemas.js';
 export * from './favourites/schemas.js';
+export * from './reporting/schemas.js';
 export * from './reviews/schemas.js';
 export * from './disputes/schemas.js';

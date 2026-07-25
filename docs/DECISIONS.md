@@ -747,3 +747,48 @@ quiet hours exist to prevent.
 **Consequences.** The alerting decision is a pure function with no clock, database or notifier,
 and is exhaustively tested. The cost is four extra fields on every favourite row and a
 compare-and-set per alert, which is the price of never sending the same notification twice.
+
+---
+
+## ADR-0035 — Reports read money from the ledger, and are computed rather than rolled up
+
+**Status.** Accepted, 2026-07-25.
+
+**Context.** The admin panel needs platform figures, seller performance and commission
+statements. Two questions had to be settled before any of it could be written: where money
+figures come from, and whether they are precomputed.
+
+**Decision 1 — Money comes from the journal, never from `orders.commission`.** The order records
+what was *meant* to be charged; the journal records what was actually posted. They diverge
+exactly when something went wrong — a charge that failed for a missing rule, a reversal after a
+dispute — and those are the cases a statement exists to show. A report built on the order's
+intention would be confidently wrong in precisely the situations somebody is checking it for.
+GMV is the exception and comes from orders, because GMV is a statement about goods sold, not
+about money the platform received.
+
+**Decision 2 — Only completed orders count toward GMV.** A cancelled order is not revenue under
+any definition, and counting pending orders would produce a figure that falls on its own as
+orders expire. A metric that moves backwards without anybody doing anything is a metric nobody
+trusts.
+
+**Decision 3 — Every figure is computed from the source collections, not read from a rollup.**
+There is no production traffic yet; a rollup would be a second source of truth to keep correct,
+and a wrong rollup is far harder to notice than a slow query. Every pipeline is bounded by the
+reporting period and matches an indexed field first, so cost is proportional to the window. The
+window is capped at 366 days for the same reason — the range *is* the cost. When volume makes
+this insufficient the answer is a nightly rollup written by the worker, built from the shape of
+these pipelines; that is a performance change, not a correctness one.
+
+**Decision 4 — Periods are half-open, `[from, to)`.** A closed range makes the caller decide
+whether `to` means midnight or the last millisecond of the day, and the two answers differ by a
+day of orders. Half-open windows also tile: a month of daily reports sums exactly to the monthly
+report, which is the property that makes a statement checkable.
+
+**Decision 5 — A comparison that cannot be made is reported as null.** A seller's first month
+has no previous month. Reporting "+100%" for it would be a fabricated number that reads as a
+fact, so `changeBp` and `effectiveRateBp` return null instead.
+
+**Consequences.** The module owns no collection and writes nothing, which is what lets it read
+across module boundaries without becoming a place where business rules hide. The arithmetic
+lives in two pure functions covered by 23 tests, because a seller will check their statement
+against their own notes and a statement that is wrong once is never read again.

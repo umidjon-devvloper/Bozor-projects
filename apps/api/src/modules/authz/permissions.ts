@@ -44,6 +44,10 @@ export const Permission = {
   REVIEW_REPLY_OWN_SHOP: 'reviews:review:reply:own_shop',
   REVIEW_MODERATE: 'reviews:review:moderate',
 
+  // reporting
+  REPORT_READ_PLATFORM: 'reporting:report:read:platform',
+  REPORT_READ_OWN_SHOP: 'reporting:report:read:own_shop',
+
   // favourites
   FAVOURITE_MANAGE_OWN: 'favourites:favourite:manage:own',
   FAVOURITE_READ_OWN_SHOP: 'favourites:favourite:read:own_shop',
@@ -136,6 +140,7 @@ const SELLER_STAFF_PERMISSIONS: Permission[] = [
   Permission.ORDER_FULFIL_OWN_SHOP,
   Permission.REVIEW_REPLY_OWN_SHOP,
   Permission.FAVOURITE_READ_OWN_SHOP,
+  Permission.REPORT_READ_OWN_SHOP,
   Permission.DISPUTE_RESPOND_OWN_SHOP,
 ];
 
@@ -186,6 +191,7 @@ export const ROLE_PERMISSIONS: Readonly<Record<UserRole, readonly Permission[]>>
   [UserRole.FINANCE]: [
     ...BUYER_PERMISSIONS,
     Permission.LEDGER_READ,
+    Permission.REPORT_READ_PLATFORM,
     Permission.LEDGER_CREDIT_MANUAL,
     Permission.WALLET_ADMIN,
     Permission.DISPUTE_RESOLVE,
