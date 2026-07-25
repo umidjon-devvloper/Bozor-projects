@@ -190,7 +190,7 @@ export const favouriteRepository = {
       targetType: FavouriteTarget.PRODUCT,
       shopId: new Types.ObjectId(shopId),
     });
-    return (ids as Types.ObjectId[]).map((id) => id.toString());
+    return (ids).map((id) => id.toString());
   },
 
   /**

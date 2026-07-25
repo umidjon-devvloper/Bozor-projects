@@ -1,4 +1,4 @@
-import { AlertKind } from './constants.js';
+import type { AlertKind } from './constants.js';
 import { decideProductAlerts, type ProductAlertInputs } from './alertPolicy.js';
 import { favouriteRepository } from './repositories/favourite.repository.js';
 
