@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import type { Logger } from '@bozorlar/logger';
 import type { DomainEventEnvelope } from '../eventDispatcher.js';
+import { text } from '../payload.js';
 
 /**
  * Propagates a shop's visibility onto its products.
@@ -18,7 +19,7 @@ export function createShopVisibilityHandler(logger: Logger) {
     const db = mongoose.connection.db;
     if (!db) throw new Error('No database connection');
 
-    const shopId = String(event.payload.shopId ?? event.aggregateId);
+    const shopId = text(event.payload.shopId, event.aggregateId);
     const shopVisible = event.payload.isVisible === true;
     const now = new Date();
     const products = db.collection('products');

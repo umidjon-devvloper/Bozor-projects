@@ -1,6 +1,8 @@
 import type { SearchIndexer } from '@bozorlar/search';
 import type { Logger } from '@bozorlar/logger';
 import type { DomainEventEnvelope } from '../eventDispatcher.js';
+import { text } from '../payload.js';
+import type { Types as MongooseTypes } from 'mongoose';
 
 /**
  * Keeps the search index in step with the catalogue.
@@ -31,7 +33,7 @@ export function registerSearchIndexHandlers(
 
   for (const type of productEvents) {
     on(type, async (event) => {
-      const productId = String(event.payload.productId ?? event.aggregateId);
+      const productId = text(event.payload.productId, event.aggregateId);
       const outcome = await indexer.indexProduct(productId);
       logger.debug({ productId, type, outcome }, 'search index updated');
     });
@@ -39,7 +41,7 @@ export function registerSearchIndexHandlers(
 
   for (const type of ['shop.created', 'shop.updated', 'shop.moderation_decided']) {
     on(type, async (event) => {
-      const shopId = String(event.payload.shopId ?? event.aggregateId);
+      const shopId = text(event.payload.shopId, event.aggregateId);
       await indexer.indexShop(shopId);
     });
   }
@@ -51,7 +53,7 @@ export function registerSearchIndexHandlers(
    * paid on a rare event rather than on every search, which is the right way round.
    */
   on('shop.visibility_changed', async (event) => {
-    const shopId = String(event.payload.shopId ?? event.aggregateId);
+    const shopId = text(event.payload.shopId, event.aggregateId);
     await indexer.indexShop(shopId);
     const products = await indexer.reindexShopProducts(shopId);
     logger.info({ shopId, products, visible: event.payload.isVisible }, 'shop visibility fanned out to search');
@@ -60,15 +62,15 @@ export function registerSearchIndexHandlers(
   /** A seller running out of balance hides their shop, and with it everything they sell. */
   for (const type of ['seller.deactivated', 'seller.reactivated']) {
     on(type, async (event) => {
-      const sellerId = String(event.payload.sellerId ?? '');
+      const sellerId = text(event.payload.sellerId);
       if (!sellerId) return;
       const mongoose = await import('mongoose');
       const db = mongoose.default.connection.db;
       if (!db) return;
       const shops = await db
-        .collection<{ _id: import('mongoose').Types.ObjectId }>('shops')
+        .collection<{ _id: MongooseTypes.ObjectId }>('shops')
         .find({ ownerId: new mongoose.default.Types.ObjectId(sellerId), deletedAt: null })
-        .project<{ _id: import('mongoose').Types.ObjectId }>({ _id: 1 })
+        .project<{ _id: MongooseTypes.ObjectId }>({ _id: 1 })
         .toArray();
       for (const shop of shops) {
         await indexer.indexShop(shop._id.toString());

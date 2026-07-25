@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import type { Logger } from '@bozorlar/logger';
 import type { DomainEventEnvelope } from '../eventDispatcher.js';
+import { text } from '../payload.js';
 
 export interface CommissionCharger {
   chargeForOrder(order: {
@@ -45,7 +46,7 @@ export function createOrderCompletedHandler(charger: CommissionCharger, logger: 
     const db = mongoose.connection.db;
     if (!db) throw new Error('No database connection');
 
-    const orderId = String(event.payload.orderId ?? event.aggregateId);
+    const orderId = text(event.payload.orderId, event.aggregateId);
     const order = await db
       .collection<OrderRow>('orders')
       .findOne({ _id: new mongoose.Types.ObjectId(orderId) });

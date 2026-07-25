@@ -4,6 +4,7 @@ import { AlertKind, createFavouriteAlertService, type ProductSnapshot } from '@b
 import type { DeliveryService } from '@bozorlar/notifications';
 import type { Logger } from '@bozorlar/logger';
 import type { DomainEventEnvelope } from '../eventDispatcher.js';
+import { text } from '../payload.js';
 
 /**
  * Turns catalogue movement into restock and price-drop alerts.
@@ -112,7 +113,7 @@ export function registerFavouriteAlertHandlers(
     'product.updated',
   ]) {
     on(type, async (event) => {
-      const productId = String(event.payload.productId ?? event.aggregateId);
+      const productId = text(event.payload.productId, event.aggregateId);
       await alerts.fanOutProduct(productId, event.eventId);
     });
   }
@@ -125,7 +126,7 @@ export function registerFavouriteAlertHandlers(
    * is back" notification: what the buyer followed was the tomatoes.
    */
   on('shop.visibility_changed', async (event) => {
-    const shopId = String(event.payload.shopId ?? event.aggregateId);
+    const shopId = text(event.payload.shopId, event.aggregateId);
     await alerts.fanOutShop(shopId, event.eventId);
   });
 

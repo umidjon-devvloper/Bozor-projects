@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import type { Logger } from '@bozorlar/logger';
 import type { DomainEventEnvelope } from '../eventDispatcher.js';
+import { text } from '../payload.js';
 
 /**
  * Carries a wallet's activation state onto the seller's shops.
@@ -18,7 +19,7 @@ export function createSellerWalletHandler(logger: Logger) {
     const db = mongoose.connection.db;
     if (!db) throw new Error('No database connection');
 
-    const sellerId = String(event.payload.sellerId ?? '');
+    const sellerId = text(event.payload.sellerId);
     if (!sellerId) return;
     const active = event.type === 'seller.reactivated';
     const now = new Date();
