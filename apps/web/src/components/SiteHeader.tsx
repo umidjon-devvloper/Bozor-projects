@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
+import type { Locale } from '@bozorlar/types';
+import { Preferences } from './Preferences';
 import { useApi, useSession } from '@/lib/session';
 
 /**
@@ -12,7 +14,7 @@ import { useApi, useSession } from '@/lib/session';
  * one hand free; anything behind a hamburger is a tap they will not make. The basket count is
  * the only live figure here because it is the only one that changes while they browse.
  */
-export function SiteHeader() {
+export function SiteHeader({ locale }: { locale: Locale }) {
   const api = useApi();
   const { status, user, signOut } = useSession();
   const pathname = usePathname();
@@ -33,6 +35,10 @@ export function SiteHeader() {
         </Link>
 
         <nav className="flex items-center gap-1 font-body text-sm">
+          <NavLink href="/qidiruv" active={pathname === '/qidiruv'}>
+            Qidirish
+          </NavLink>
+          <Preferences locale={locale} />
           <NavLink href="/savat" active={pathname === '/savat'}>
             Savat
             {count > 0 ? (

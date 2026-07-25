@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { localized } from '@bozorlar/api-client';
-import { Locale } from '@bozorlar/types';
-import { api } from '@/lib/api';
+import { serverApi } from '@/lib/api';
+import { readLocale } from '@/lib/serverLocale';
 import { StallCard } from '@/components/StallCard';
 
 export const revalidate = 60;
@@ -15,6 +15,7 @@ export const revalidate = 60;
  * minute and is not something to page on.
  */
 export default async function MarketPage({ params }: { params: Promise<{ slug: string }> }) {
+  const [api, locale] = await Promise.all([serverApi(), readLocale()]);
   const { slug } = await params;
 
   const market = await api.markets
@@ -29,7 +30,7 @@ export default async function MarketPage({ params }: { params: Promise<{ slug: s
     .catch(() => []);
 
   const sorted = [...shops].sort((a, b) => Number(b.isOpenNow) - Number(a.isOpenNow));
-  const marketName = localized(market.name, Locale.UZ_LATN);
+  const marketName = localized(market.name, locale);
   const openCount = shops.filter((shop) => shop.isOpenNow).length;
 
   return (
@@ -47,7 +48,7 @@ export default async function MarketPage({ params }: { params: Promise<{ slug: s
           {marketName}
         </h1>
         <p className="mt-3 max-w-xl font-body text-sm leading-relaxed text-ink/65 dark:text-paper/65">
-          {localized(market.address, Locale.UZ_LATN)}
+          {localized(market.address, locale)}
         </p>
         <p className="mt-4 font-body text-sm text-ink/70 dark:text-paper/70">
           {market.isOpenNow ? (
@@ -74,7 +75,7 @@ export default async function MarketPage({ params }: { params: Promise<{ slug: s
           <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {sorted.map((shop) => (
               <li key={shop.id}>
-                <StallCard shop={shop} marketName={marketName} />
+                <StallCard shop={shop} marketName={marketName} locale={locale} />
               </li>
             ))}
           </ul>

@@ -1,9 +1,10 @@
 import { notFound } from 'next/navigation';
 import { formatQuantity, localized } from '@bozorlar/api-client';
-import { Locale } from '@bozorlar/types';
-import { api } from '@/lib/api';
+import { serverApi } from '@/lib/api';
+import { readLocale } from '@/lib/serverLocale';
 import { PriceBoard } from '@/components/PriceBoard';
 import { AddToCart } from '@/components/AddToCart';
+import { FavouriteButton } from '@/components/FavouriteButton';
 
 export const revalidate = 60;
 
@@ -16,6 +17,7 @@ export const revalidate = 60;
  * half-kilos should learn that here rather than at checkout.
  */
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
+  const [api, locale] = await Promise.all([serverApi(), readLocale()]);
   const { slug } = await params;
 
   const product = await api.products
@@ -37,7 +39,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
       <header className="mb-8">
         <h1 className="font-display text-3xl font-bold leading-tight text-ink sm:text-4xl dark:text-paper">
-          {localized(product.name, Locale.UZ_LATN)}
+          {localized(product.name, locale)}
         </h1>
         {product.rating.count > 0 ? (
           <p className="mt-3 font-body text-sm text-ink/60 dark:text-paper/60">
@@ -76,8 +78,9 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         </div>
       )}
 
-      <div className="mb-10">
+      <div className="mb-10 space-y-4">
         <AddToCart product={product} />
+        <FavouriteButton productId={product.id} />
       </div>
 
       {/*

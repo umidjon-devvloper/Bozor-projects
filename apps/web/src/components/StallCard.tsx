@@ -1,11 +1,19 @@
 import Link from 'next/link';
 import { localized } from '@bozorlar/api-client';
 import type { ShopResponse } from '@bozorlar/contracts';
-import { Locale } from '@bozorlar/types';
+import type { Locale } from '@bozorlar/types';
 import { StallAddress } from './PriceBoard';
 
 /** A stall in a market listing. Open-or-shut leads; the name is supporting detail. */
-export function StallCard({ shop, marketName }: { shop: ShopResponse; marketName: string }) {
+export function StallCard({
+  shop,
+  marketName,
+  locale,
+}: {
+  shop: ShopResponse;
+  marketName: string;
+  locale: Locale;
+}) {
   return (
     <Link
       href={`/shops/${shop.slug}`}
@@ -26,7 +34,7 @@ export function StallCard({ shop, marketName }: { shop: ShopResponse; marketName
       </span>
 
       <h3 className="mt-2 font-display text-base font-medium text-ink group-hover:text-tile dark:text-paper">
-        {localized(shop.name, Locale.UZ_LATN)}
+        {localized(shop.name, locale)}
       </h3>
       <StallAddress className="mt-1" market={marketName} section={shop.sectionCode} stall={shop.stallNo} />
       <p className="mt-3 font-body text-xs text-ink/45 dark:text-paper/45">

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { localized } from '@bozorlar/api-client';
 import type { ProductResponse } from '@bozorlar/contracts';
-import { Locale } from '@bozorlar/types';
+import type { Locale } from '@bozorlar/types';
 import { PriceBoard } from './PriceBoard';
 
 /**
@@ -15,7 +15,7 @@ import { PriceBoard } from './PriceBoard';
  * visible so they can be followed for a restock, and a card that vanished would make the
  * alert that arrives tomorrow inexplicable.
  */
-export function ProductCard({ product }: { product: ProductResponse }) {
+export function ProductCard({ product, locale }: { product: ProductResponse; locale: Locale }) {
   const finished = !product.isPurchasable;
 
   return (
@@ -25,7 +25,7 @@ export function ProductCard({ product }: { product: ProductResponse }) {
     >
       <div className="min-w-0">
         <h3 className="truncate font-display text-base font-medium text-ink group-hover:text-tile dark:text-paper">
-          {localized(product.name, Locale.UZ_LATN)}
+          {localized(product.name, locale)}
         </h3>
         <p className="mt-1.5 font-body text-xs text-ink/55 dark:text-paper/55">
           {finished ? (

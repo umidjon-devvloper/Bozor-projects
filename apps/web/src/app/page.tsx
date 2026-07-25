@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import { localized } from '@bozorlar/api-client';
-import { Locale } from '@bozorlar/types';
 import type { MarketResponse } from '@bozorlar/contracts';
-import { api } from '@/lib/api';
+import type { Locale } from '@bozorlar/types';
+import { serverApi } from '@/lib/api';
+import { readLocale } from '@/lib/serverLocale';
 import { PriceBoard, StallAddress } from '@/components/PriceBoard';
 
 export const revalidate = 60;
@@ -16,6 +17,7 @@ export const revalidate = 60;
  * prices, which is what a person actually walks in reading.
  */
 export default async function HomePage() {
+  const [api, locale] = await Promise.all([serverApi(), readLocale()]);
   const markets = await api.markets
     .list({ limit: 12 })
     .then((response) => response.data)
@@ -57,7 +59,7 @@ export default async function HomePage() {
           <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {markets.map((market) => (
               <li key={market.id}>
-                <MarketCard market={market} />
+                <MarketCard market={market} locale={locale} />
               </li>
             ))}
           </ul>
@@ -96,7 +98,7 @@ export default async function HomePage() {
  * shopper who drives to a shut market will not use the site again. It leads, before the name's
  * own supporting detail.
  */
-function MarketCard({ market }: { market: MarketResponse }) {
+function MarketCard({ market, locale }: { market: MarketResponse; locale: Locale }) {
   return (
     <Link
       href={`/markets/${market.slug}`}
@@ -117,10 +119,10 @@ function MarketCard({ market }: { market: MarketResponse }) {
       </span>
 
       <h3 className="mt-2 font-display text-base font-medium text-ink group-hover:text-tile dark:text-paper">
-        {localized(market.name, Locale.UZ_LATN)}
+        {localized(market.name, locale)}
       </h3>
       <p className="mt-1 font-body text-xs leading-relaxed text-ink/55 dark:text-paper/55">
-        {localized(market.address, Locale.UZ_LATN)}
+        {localized(market.address, locale)}
       </p>
       <p className="mt-3 font-body text-xs text-ink/45 dark:text-paper/45">
         {market.shopCount} do'kon · {market.productCount} mahsulot

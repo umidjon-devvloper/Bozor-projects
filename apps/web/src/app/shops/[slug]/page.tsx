@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { localized } from '@bozorlar/api-client';
-import { Locale } from '@bozorlar/types';
-import { api } from '@/lib/api';
+import { serverApi } from '@/lib/api';
+import { readLocale } from '@/lib/serverLocale';
 import { ProductCard } from '@/components/ProductCard';
 import { StallAddress } from '@/components/PriceBoard';
 
@@ -15,6 +15,7 @@ export const revalidate = 60;
  * so they can follow the product instead of walking to another row.
  */
 export default async function ShopPage({ params }: { params: Promise<{ slug: string }> }) {
+  const [api, locale] = await Promise.all([serverApi(), readLocale()]);
   const { slug } = await params;
 
   const shop = await api.shops
@@ -35,7 +36,7 @@ export default async function ShopPage({ params }: { params: Promise<{ slug: str
   ]);
 
   const sorted = [...products].sort((a, b) => Number(b.isPurchasable) - Number(a.isPurchasable));
-  const marketName = market ? localized(market.name, Locale.UZ_LATN) : '';
+  const marketName = market ? localized(market.name, locale) : '';
 
   return (
     <main className="mx-auto w-full max-w-4xl px-5 pb-24 pt-10 sm:px-8">
@@ -69,7 +70,7 @@ export default async function ShopPage({ params }: { params: Promise<{ slug: str
         </span>
 
         <h1 className="mt-3 font-display text-3xl font-bold leading-tight text-ink dark:text-paper">
-          {localized(shop.name, Locale.UZ_LATN)}
+          {localized(shop.name, locale)}
         </h1>
         <StallAddress
           className="mt-2 text-sm"
@@ -111,7 +112,7 @@ export default async function ShopPage({ params }: { params: Promise<{ slug: str
           <ul className="grid gap-3">
             {sorted.map((product) => (
               <li key={product.id}>
-                <ProductCard product={product} />
+                <ProductCard product={product} locale={locale} />
               </li>
             ))}
           </ul>

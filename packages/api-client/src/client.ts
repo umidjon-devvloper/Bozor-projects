@@ -19,6 +19,35 @@ import type {
  * user staring at an empty card.
  */
 
+/**
+ * A search hit is not a product.
+ *
+ * It comes from the index rather than the catalogue: fewer fields, no slug, and a name already
+ * truncated for display. Typing it separately keeps a result card from quietly expecting fields
+ * the index does not carry.
+ */
+export interface SearchHit {
+  id: string;
+  name: string;
+  price: { amount: string; currency: 'UZS' };
+  unit: string;
+  inStock: boolean;
+  rating: { avg: number; count: number };
+  imageUrl: string | null;
+  thumbUrl: string | null;
+  shop: { id: string; name: string };
+  marketId: string;
+  categoryId: string;
+}
+
+export interface SearchResults {
+  items: SearchHit[];
+  found: number;
+  page: number;
+  perPage: number;
+  facets?: unknown;
+}
+
 export interface PublicUser {
   id: string;
   phone: string;
@@ -249,8 +278,15 @@ export function createApiClient(options: ApiClientOptions) {
     },
 
     search: {
-      products: (query: { q: string; marketId?: string; limit?: number }) =>
-        request<ProductResponse[]>('/api/v1/search/products', { query }),
+      products: (query: {
+        q?: string;
+        marketId?: string;
+        inStockOnly?: string;
+        sort?: string;
+        page?: number;
+        perPage?: number;
+      }) => request<SearchResults>('/api/v1/search/products', { query }),
+      suggest: (q: string) => request<{ suggestions: string[] }>('/api/v1/search/suggest', { query: { q } }),
     },
 
     favourites: {

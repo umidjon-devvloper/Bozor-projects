@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { Providers } from './providers';
 import { SiteHeader } from '@/components/SiteHeader';
+import { readLocale } from '@/lib/serverLocale';
+import { THEME_INIT_SCRIPT } from '@/lib/theme';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -18,10 +20,14 @@ export const metadata: Metadata = {
  * fall back to a system font for a large share of the audience — the one place a type choice
  * stops being a type choice and becomes a bug.
  */
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const locale = await readLocale();
+
   return (
-    <html lang="uz">
+    <html lang={locale}>
       <head>
+        {/* Applied before first paint so a dark reader never sees a white flash. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -31,7 +37,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body>
         <Providers>
-          <SiteHeader />
+          <SiteHeader locale={locale} />
           {children}
         </Providers>
       </body>
