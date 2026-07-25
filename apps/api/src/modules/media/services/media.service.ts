@@ -195,7 +195,9 @@ export function createMediaService(deps: {
           await this.rejectAsset(
             mediaKey,
             'Rejected by malware scanner',
-            String(error.params?.signature ?? 'unknown'),
+            // The param is untyped; an object here would become '[object Object]' in an
+            // audit entry that outlives the incident it records.
+            typeof error.params?.signature === 'string' ? error.params.signature : 'unknown',
           );
           await audit.record({
             actorId: actor.userId,

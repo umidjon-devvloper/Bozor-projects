@@ -56,7 +56,9 @@ export function optionalAuthenticate(deps: Deps) {
       next();
       return;
     }
-    required(req, res, (error?: unknown) => {
+    // `required` is an async middleware; Express ignores its return value and errors surface
+    // through `next`, so the promise is discarded explicitly rather than left floating.
+    void required(req, res, (error?: unknown) => {
       // A bad token on a public route is treated as anonymous rather than as an error.
       next(error && AppError.isAppError(error) ? undefined : error);
     });

@@ -53,6 +53,9 @@ export interface AuthDependencies {
 export function createAuthService(deps: AuthDependencies) {
   const { otp, tokens, sessions, audit, logger } = deps;
 
+  // Returns a promise because every caller awaits it alongside genuinely async guards; making
+  // it synchronous would put a bare call in the middle of an await chain.
+  // eslint-disable-next-line @typescript-eslint/require-await
   async function assertNotLocked(user: UserRecord): Promise<void> {
     if (user.lockedUntil && user.lockedUntil.getTime() > Date.now()) {
       const retryAfter = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 1000);

@@ -101,6 +101,20 @@ export interface ParsedQuery {
   cursorFilter: Record<string, unknown> | null;
 }
 
+/**
+ * A scalar as text, or empty for anything that is not one.
+ *
+ * The third place this class of fault has appeared — after the worker's event payloads and the
+ * reporting money reader. Untrusted input reaches all three, and `String()` on an object
+ * produces a plausible-looking value rather than a failure.
+ */
+function scalarText(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'bigint') return value.toString();
+  if (typeof value === 'boolean') return String(value);
+  return '';
+}
+
 export function parseQuery(
   query: Record<string, unknown>,
   spec: QuerySpec,
@@ -156,7 +170,12 @@ export function parseQuery(
     }
 
     const path = filterSpec.path ?? field;
-    const value = String(rawValue);
+    /**
+     * A query parameter that is not a scalar becomes a filter value, and `String()` would turn
+     * an object into the literal text `[object Object]` — a value that matches nothing, silently.
+     * Express parses `?a[b]=c` into an object, so this is reachable from any URL.
+     */
+    const value = scalarText(rawValue);
 
     if (operator === 'in' || operator === 'nin') {
       const items = value.split(',').filter(Boolean);
@@ -244,7 +263,9 @@ export function buildNextCursor(
     if (value instanceof Date) return value.toISOString();
     if (typeof value === 'number' || typeof value === 'string') return value;
     if (value === null || value === undefined) return null;
-    return String(value);
+    // A cursor is opaque to the client but must round-trip exactly; `[object Object]` in a
+    // cursor key would page from a position that does not exist.
+    return scalarText(value);
   });
   return encodeCursor({ v: 1, s: sortKey, k: keys });
 }

@@ -79,7 +79,7 @@ function fakePayments(overrides: Partial<PaymentService> = {}): PaymentService {
     cancel: vi.fn(async () => transaction({ state: PaymeState.CANCELLED, cancelledAt: new Date() })),
     history: vi.fn(async () => []),
     ...overrides,
-  } as unknown as PaymentService;
+  };
 }
 
 const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() } as never;
@@ -171,7 +171,7 @@ describe('Payme — idempotency, which the protocol requires', () => {
   it('creates once and answers with the stored transaction on the repeat', async () => {
     // Payme documents that every call is sent twice on purpose and the second must match.
     const create = vi.fn(async () => transaction());
-    const payments = fakePayments({ find: vi.fn(async () => null) as never, create: create as never });
+    const payments = fakePayments({ find: vi.fn(async () => null), create: create });
     const controller = createPaymeController(payments, logger);
 
     const first = stubResponse();
@@ -184,7 +184,7 @@ describe('Payme — idempotency, which the protocol requires', () => {
       first.res,
     );
 
-    const existing = fakePayments({ find: vi.fn(async () => transaction()) as never });
+    const existing = fakePayments({ find: vi.fn(async () => transaction()) });
     const second = stubResponse();
     await createPaymeController(existing, logger).handle(
       paymeRequest('CreateTransaction', {
@@ -206,7 +206,7 @@ describe('Payme — idempotency, which the protocol requires', () => {
     const performedAt = new Date('2026-08-03T01:00:00Z');
     const perform = vi.fn();
     const payments = fakePayments({
-      find: vi.fn(async () => transaction({ state: PaymeState.COMPLETED, performedAt })) as never,
+      find: vi.fn(async () => transaction({ state: PaymeState.COMPLETED, performedAt })),
       perform: perform as never,
     });
     const { res, sent } = stubResponse();
@@ -225,7 +225,7 @@ describe('Payme — idempotency, which the protocol requires', () => {
 
   it('refuses to perform a cancelled transaction', async () => {
     const payments = fakePayments({
-      find: vi.fn(async () => transaction({ state: PaymeState.CANCELLED })) as never,
+      find: vi.fn(async () => transaction({ state: PaymeState.CANCELLED })),
     });
     const { res, sent } = stubResponse();
 
@@ -251,7 +251,7 @@ describe('Payme — idempotency, which the protocol requires', () => {
     const cancel = vi.fn();
     const cancelledAt = new Date('2026-08-03T02:00:00Z');
     const payments = fakePayments({
-      find: vi.fn(async () => transaction({ state: PaymeState.CANCELLED, cancelledAt })) as never,
+      find: vi.fn(async () => transaction({ state: PaymeState.CANCELLED, cancelledAt })),
       cancel: cancel as never,
     });
     const { res, sent } = stubResponse();
@@ -268,7 +268,7 @@ describe('Payme — idempotency, which the protocol requires', () => {
 
 describe('Payme — CheckTransaction', () => {
   it('reports every timestamp, with zero for what has not happened', async () => {
-    const payments = fakePayments({ find: vi.fn(async () => transaction()) as never });
+    const payments = fakePayments({ find: vi.fn(async () => transaction()) });
     const { res, sent } = stubResponse();
 
     await createPaymeController(payments, logger).handle(
@@ -296,7 +296,8 @@ function clickBody(overrides: Record<string, unknown> = {}) {
     sign_time: '2026-08-03 10:00:00',
     ...overrides,
   };
-  const prepareId = base.action === 1 ? String(base.merchant_prepare_id ?? '') : '';
+  const prepare = base.merchant_prepare_id;
+  const prepareId = base.action === 1 && typeof prepare === 'string' ? prepare : '';
   const sign = createHash('md5')
     .update(
       String(base.click_trans_id) +
@@ -359,7 +360,7 @@ describe('Click — the signature is the authentication', () => {
   it('answers a repeated prepare with the same id instead of creating again', async () => {
     const create = vi.fn();
     const payments = fakePayments({
-      find: vi.fn(async () => transaction({ provider: 'CLICK' })) as never,
+      find: vi.fn(async () => transaction({ provider: 'CLICK' })),
       create: create as never,
     });
     const { res, sent } = stubResponse();
@@ -378,8 +379,8 @@ describe('Click — complete', () => {
     const cancel = vi.fn(async () => transaction({ state: PaymeState.CANCELLED }));
     const perform = vi.fn();
     const payments = fakePayments({
-      find: vi.fn(async () => transaction({ provider: 'CLICK' })) as never,
-      cancel: cancel as never,
+      find: vi.fn(async () => transaction({ provider: 'CLICK' })),
+      cancel: cancel,
       perform: perform as never,
     });
     const { res, sent } = stubResponse();
@@ -407,7 +408,7 @@ describe('Click — complete', () => {
   it('does not credit twice — an already completed transaction answers with its id', async () => {
     const perform = vi.fn();
     const payments = fakePayments({
-      find: vi.fn(async () => transaction({ provider: 'CLICK', state: PaymeState.COMPLETED })) as never,
+      find: vi.fn(async () => transaction({ provider: 'CLICK', state: PaymeState.COMPLETED })),
       perform: perform as never,
     });
     const { res, sent } = stubResponse();

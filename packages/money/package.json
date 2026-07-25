@@ -12,9 +12,9 @@
     }
   },
   "scripts": {
-    "build": "tsc -b",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
-    "lint": "eslint src",
+    "build": "tsc -b tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src tests",
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {

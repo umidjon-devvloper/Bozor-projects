@@ -17,6 +17,33 @@ module.exports = {
   plugins: ['@typescript-eslint'],
   extends: ['eslint:recommended', 'plugin:@typescript-eslint/recommended-type-checked'],
   ignorePatterns: ['dist', 'node_modules', '*.cjs'],
+
+  overrides: [
+    {
+      /**
+       * Tests are held to the same standard as source with three exceptions, each inherent to
+       * testing rather than a relaxation of care.
+       *
+       * `supertest` types a response body as `any`, so every assertion against a real HTTP
+       * response trips the unsafe-access rules — the alternative is casting the same shape at
+       * two hundred call sites, which adds noise without adding safety.
+       *
+       * A test asserts on values it has just constructed, so a non-null assertion there is a
+       * statement about the fixture rather than an assumption about the world.
+       *
+       * `require-await` fires on async test bodies that only assert, which is the normal shape
+       * of a test that awaits nothing.
+       */
+      files: ['**/tests/**/*.ts', '**/*.test.ts'],
+      rules: {
+        '@typescript-eslint/no-unsafe-member-access': 'off',
+        '@typescript-eslint/no-unsafe-assignment': 'off',
+        '@typescript-eslint/no-non-null-assertion': 'off',
+        '@typescript-eslint/require-await': 'off',
+      },
+    },
+  ],
+
   rules: {
     /**
      * Express 4 ignores whatever a handler returns, and this codebase depends on that:

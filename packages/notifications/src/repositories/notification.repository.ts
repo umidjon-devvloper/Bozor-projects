@@ -31,7 +31,10 @@ function toRecord(doc: NotificationDoc): NotificationRecord {
     title: doc.title,
     body: doc.body,
     target: doc.target,
-    data: doc.data instanceof Map ? Object.fromEntries(doc.data) : (doc.data ?? {}),
+    data:
+      doc.data instanceof Map
+        ? Object.fromEntries<string>(doc.data)
+        : ((doc.data ?? {})),
     attempts: doc.attempts,
     readAt: doc.readAt,
     createdAt: doc.createdAt,

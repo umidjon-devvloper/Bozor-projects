@@ -92,6 +92,8 @@ export function createSearchController(deps: { search: SearchService; indexer: S
      * an HTTP connection open for it would time out somewhere between here and the operator.
      * Progress is in the worker's logs.
      */
+    // Deliberately does not await the rebuild: it runs for minutes and the caller gets 202.
+    // eslint-disable-next-line @typescript-eslint/require-await
     async reindex(req: Request, res: Response): Promise<void> {
       const auth = requireAuth(req);
       void auth;

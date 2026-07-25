@@ -53,5 +53,7 @@ export async function disconnectMongo(): Promise<void> {
 }
 
 export function mongoHealthy(): boolean {
-  return mongoose.connection.readyState === 1;
+  // 1 is `connected`. Compared through the driver's own enum so the constant is named rather
+  // than a magic number, and so the comparison is type-safe.
+  return mongoose.connection.readyState === mongoose.ConnectionStates.connected;
 }

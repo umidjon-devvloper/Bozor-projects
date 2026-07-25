@@ -24,7 +24,10 @@ function stubFetch(...responses: StubResponse[]) {
   let index = 0;
 
   const impl = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
-    calls.push({ url: String(url), init: init ?? {} });
+    // The client always passes a string; narrowing rather than String()-ing keeps the stub
+    // from recording '[object Object]' if that ever stops being true.
+    const recorded = typeof url === 'string' ? url : url instanceof URL ? url.href : url.url;
+    calls.push({ url: recorded, init: init ?? {} });
     const next = responses[Math.min(index, responses.length - 1)];
     index += 1;
     return {

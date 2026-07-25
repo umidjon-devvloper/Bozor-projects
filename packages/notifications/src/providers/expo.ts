@@ -25,8 +25,9 @@ export function createExpoProvider(accessToken: string | null): PushProvider {
     name: 'expo',
     platform: 'ANY',
 
-    async healthy(): Promise<boolean> {
-      return true;
+    /** Expo needs no credential check; the token is validated per send. */
+    healthy(): Promise<boolean> {
+      return Promise.resolve(true);
     },
 
     async send(messages: readonly PushMessage[]): Promise<PushResult[]> {

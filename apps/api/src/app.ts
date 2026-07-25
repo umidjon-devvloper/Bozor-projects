@@ -188,7 +188,11 @@ export function createApp({ logger, redis }: AppDependencies): Express {
   const sessions = createSessionService(redis);
   const authService = createAuthService({ otp, tokens, sessions, audit, logger });
   const authController = createAuthController(authService);
+  // Express ignores a handler's return value and errors surface through `next`, so an async
+  // middleware assigned to a RequestHandler is the intended shape rather than a mistake.
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   const requireAuth: RequestHandler = authenticate({ tokens, sessions });
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   const optionalAuth: RequestHandler = optionalAuthenticate({ tokens, sessions });
 
   // media
@@ -269,6 +273,7 @@ export function createApp({ logger, redis }: AppDependencies): Express {
     logger,
   });
   const orderController = createOrderController(orderService);
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   const requireIdempotency: RequestHandler = idempotency({ logger });
 
   // wallet, ledger & commission

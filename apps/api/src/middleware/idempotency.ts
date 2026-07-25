@@ -38,7 +38,10 @@ export function idempotency(deps: { logger: Logger }) {
     }
 
     const userId = req.auth.userId;
-    const endpoint = `${req.method} ${req.baseUrl}${req.route?.path ?? req.path}`;
+    // `req.route` is untyped on Express's Request; the path is the only field read and it is
+    // a string when present.
+    const routePath = (req.route as { path?: string } | undefined)?.path;
+    const endpoint = `${req.method} ${req.baseUrl}${routePath ?? req.path}`;
     const requestHash = hashBody(req.body);
 
     const record = await IdempotencyKeyModel.findOne({ key, userId }).lean<{

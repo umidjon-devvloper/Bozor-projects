@@ -5,10 +5,10 @@
       "path": "packages/types"
     },
     {
-      "path": "packages/errors"
+      "path": "packages/errors/tsconfig.build.json"
     },
     {
-      "path": "packages/money"
+      "path": "packages/money/tsconfig.build.json"
     },
     {
       "path": "packages/config"
@@ -35,10 +35,10 @@
       "path": "packages/search"
     },
     {
-      "path": "packages/api-client"
+      "path": "packages/api-client/tsconfig.build.json"
     },
     {
-      "path": "apps/api"
+      "path": "apps/api/tsconfig.build.json"
     },
     {
       "path": "apps/worker"

@@ -107,9 +107,17 @@ export function createApnsProvider(credentials: ApnsCredentials): PushProvider {
       stream.on('data', (chunk: Buffer) => {
         body += chunk.toString('utf8');
       });
-      stream.on('error', (error) => {
+      // The stream's error is untyped, and a provider failure message ends up in an operator's
+      // log — `[object Object]` there is a failure nobody can diagnose.
+      stream.on('error', (error: unknown) => {
         clearTimeout(timer);
-        resolve({ token: message.token, ok: false, messageId: null, errorCode: 'UNAVAILABLE', errorMessage: error.message });
+        resolve({
+          token: message.token,
+          ok: false,
+          messageId: null,
+          errorCode: 'UNAVAILABLE',
+          errorMessage: error instanceof Error ? error.message : String(error),
+        });
       });
       stream.on('end', () => {
         clearTimeout(timer);
@@ -144,6 +152,7 @@ export function createApnsProvider(credentials: ApnsCredentials): PushProvider {
     platform: 'IOS',
     async healthy(): Promise<boolean> {
       try {
+        await Promise.resolve();
         currentToken();
         const active = getSession();
         return !active.destroyed;
