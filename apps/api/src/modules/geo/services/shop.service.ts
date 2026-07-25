@@ -275,6 +275,32 @@ export function createShopService(deps: { cache: Cache; audit: AuditService; log
       };
     },
 
+    /**
+     * Shops awaiting moderation.
+     *
+     * The `{ moderationStatus, createdAt }` index has existed since the module was written and
+     * nothing ever read it — the queue was designed for and never exposed, so a shop submitted
+     * for review sat there until somebody happened to look it up by id. Oldest first, for the
+     * same reason as the product queue.
+     *
+     * `parseQuery` is bypassed for the status filter deliberately: the public spec forces
+     * `isVisible: true`, and a pending shop is by definition not visible.
+     */
+    async listForModeration(query: Record<string, unknown>): Promise<Page<ShopView>> {
+      const parsed = parseQuery({ ...query, sort: 'createdAt' }, SHOP_QUERY_SPEC);
+      const rows = await shopRepository.list({
+        ...parsed,
+        filter: { moderationStatus: ModerationStatus.PENDING },
+      });
+      const page = toPage(rows as unknown as Record<string, unknown>[], parsed);
+      const now = new Date();
+      return {
+        items: (page.items as unknown as ShopRecord[]).map((shop) => withOpeningState(shop, now)),
+        nextCursor: page.nextCursor,
+        hasMore: page.hasMore,
+      };
+    },
+
     async listForUser(userId: string): Promise<ShopView[]> {
       const shops = await shopRepository.listForUser(userId);
       const now = new Date();

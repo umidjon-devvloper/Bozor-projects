@@ -243,6 +243,18 @@ export function createGeoController(deps: {
       });
     },
 
+    async shopModerationQueue(req: Request, res: Response): Promise<void> {
+      const page = await shops.listForModeration(req.query as Record<string, unknown>);
+      sendCollection(
+        res,
+        page.items.map((shop) => toShopResponse(shop, { ...viewOptions(req), privileged: true })),
+        {
+          next: page.nextCursor,
+          hasMore: page.hasMore,
+        },
+      );
+    },
+
     async moderateShop(req: Request, res: Response): Promise<void> {
       const auth = requireAuth(req);
       const body = req.body as { approved: boolean; reason?: string };

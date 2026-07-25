@@ -33,6 +33,7 @@ export default function QueuesPage() {
   return (
     <Shell>
       <ProductQueue />
+      <ShopQueue />
       <ApplicationQueue />
       <DisputeQueue />
     </Shell>
@@ -93,6 +94,77 @@ function ProductQueue() {
             <div className="flex shrink-0 gap-2">
               <Approve onClick={() => moderate.mutate({ id: product.id, approved: true })} busy={moderate.isPending} />
               <Reject onClick={() => setRejecting(product.id)} />
+            </div>
+          )}
+        </Row>
+      ))}
+      {error ? <Alert>{error}</Alert> : null}
+    </Section>
+  );
+}
+
+/* --------------------------------------------------------------------- shops */
+
+/**
+ * Shops awaiting review.
+ *
+ * The backend had the index for this queue from the day the module was written and never
+ * exposed a way to read it, so a shop submitted for moderation waited until somebody looked it
+ * up by id. It is a queue now.
+ */
+function ShopQueue() {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  const [rejecting, setRejecting] = useState<string | null>(null);
+  const [reason, setReason] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const queue = useQuery({
+    queryKey: ['shop-queue'],
+    queryFn: () => api.admin.shopQueue({ limit: 50 }).then((response) => response.data),
+  });
+
+  const moderate = useMutation({
+    mutationFn: (input: { id: string; approved: boolean; reason?: string }) =>
+      api.admin.moderateShop(input.id, input.approved, input.reason),
+    onSuccess: () => {
+      setRejecting(null);
+      setReason('');
+      setError(null);
+      void queryClient.invalidateQueries({ queryKey: ['shop-queue'] });
+    },
+    onError: (caught) =>
+      setError(caught instanceof ApiError ? (caught.detail ?? caught.message) : 'Bajarilmadi.'),
+  });
+
+  return (
+    <Section title="Do'kon moderatsiyasi" count={queue.data?.length} query={queue}>
+      {queue.data?.map((shop) => (
+        <Row key={shop.id}>
+          <div className="min-w-0">
+            <p className="font-display text-base text-ink dark:text-paper">
+              {typeof shop.name === 'string' ? shop.name : shop.slug}
+            </p>
+            <p className="mt-1 font-body text-xs text-ink/55 dark:text-paper/55">
+              {[shop.sectionCode, shop.stallNo ? `${shop.stallNo}-do'kon` : null]
+                .filter(Boolean)
+                .join(' · ')}
+            </p>
+          </div>
+
+          {rejecting === shop.id ? (
+            <ReasonForm
+              placeholder="Nima to'g'rilanishi kerak — sotuvchi shuni o'qiydi"
+              value={reason}
+              onChange={setReason}
+              onCancel={() => setRejecting(null)}
+              onSubmit={() => moderate.mutate({ id: shop.id, approved: false, reason })}
+              busy={moderate.isPending}
+            />
+          ) : (
+            <div className="flex shrink-0 gap-2">
+              <Approve onClick={() => moderate.mutate({ id: shop.id, approved: true })} busy={moderate.isPending} />
+              <Reject onClick={() => setRejecting(shop.id)} />
             </div>
           )}
         </Row>

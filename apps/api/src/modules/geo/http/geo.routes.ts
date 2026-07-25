@@ -149,6 +149,12 @@ export function createGeoAdminRouter(
     validateBody(SetMarketStatusRequestSchema),
     asyncHandler(controller.setMarketStatus),
   );
+  router.get(
+    '/shops/moderation-queue',
+    limited,
+    requirePermission(Permission.MODERATION_REVIEW),
+    asyncHandler(controller.shopModerationQueue),
+  );
   router.post(
     '/shops/:id/moderate',
     limited,

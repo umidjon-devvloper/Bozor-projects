@@ -492,6 +492,23 @@ export function createApiClient(options: ApiClientOptions) {
           method: 'POST',
           body: JSON.stringify(input),
         }),
+      shopQueue: (query: { limit?: number } = {}) =>
+        request<ShopResponse[]>('/api/v1/admin/shops/moderation-queue', { query }),
+      moderateReview: (id: string, hide: boolean, reason: string) =>
+        request<unknown>(`/api/v1/admin/reviews/${id}/moderate`, {
+          method: 'POST',
+          body: JSON.stringify({ hide, reason }),
+        }),
+      createMarket: (input: Record<string, unknown>) =>
+        request<MarketResponse>('/api/v1/admin/markets', {
+          method: 'POST',
+          body: JSON.stringify(input),
+        }),
+      setMarketStatus: (id: string, status: string) =>
+        request<MarketResponse>(`/api/v1/admin/markets/${id}/status`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status }),
+        }),
       moderateShop: (id: string, approved: boolean, reason?: string) =>
         request<unknown>(`/api/v1/admin/shops/${id}/moderate`, {
           method: 'POST',

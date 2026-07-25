@@ -112,7 +112,82 @@ export default function SystemPage() {
           </button>
         )}
       </section>
+
+      <ReviewModeration />
     </Shell>
+  );
+}
+
+/**
+ * Hiding a review, by id.
+ *
+ * Deliberately a lookup rather than a queue, because there is nothing to queue: the platform
+ * has no way for anybody to report a review, so a moderator only ever arrives here holding an
+ * id from a complaint that came by telephone. Building a browsable list of reviews to police
+ * would invite moderating opinions nobody objected to.
+ *
+ * The reason is required and stored on the review itself — the model refuses a hidden review
+ * without one, which is the right rule: hiding somebody's words with no recorded justification
+ * is not moderation, it is deletion.
+ */
+function ReviewModeration() {
+  const api = useApi();
+  const [reviewId, setReviewId] = useState('');
+  const [reason, setReason] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  const hide = useMutation({
+    mutationFn: () => api.admin.moderateReview(reviewId.trim(), true, reason.trim()),
+    onSuccess: () => {
+      setReviewId('');
+      setReason('');
+      setError(null);
+      setDone(true);
+    },
+    onError: (caught) =>
+      setError(caught instanceof ApiError ? (caught.detail ?? caught.message) : 'Bajarilmadi.'),
+  });
+
+  const valid = /^[a-f0-9]{24}$/.test(reviewId.trim()) && reason.trim().length >= 5;
+
+  return (
+    <section className="mt-10 rounded-stall border border-ink/10 p-5 dark:border-paper/10">
+      <h2 className="font-display text-base font-medium text-ink dark:text-paper">
+        Sharhni yashirish
+      </h2>
+      <p className="mt-2 max-w-lg font-body text-xs leading-relaxed text-ink/55 dark:text-paper/55">
+        Sharhlar uchun navbat yo'q — shikoyat kelganda identifikator bo'yicha ochiladi. Sabab
+        sharhning o'zida saqlanadi.
+      </p>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <input
+          value={reviewId}
+          onChange={(event) => setReviewId(event.target.value)}
+          placeholder="Sharh ID"
+          className="w-full rounded-stall border border-ink/15 bg-white px-3 py-2.5 font-body text-sm tabular-nums text-ink placeholder:text-ink/30 dark:border-paper/15 dark:bg-paper/5 dark:text-paper"
+        />
+        <input
+          value={reason}
+          onChange={(event) => setReason(event.target.value)}
+          placeholder="Nima uchun yashirilyapti"
+          className="w-full rounded-stall border border-ink/15 bg-white px-3 py-2.5 font-body text-sm text-ink placeholder:text-ink/30 dark:border-paper/15 dark:bg-paper/5 dark:text-paper"
+        />
+      </div>
+
+      {error ? <p role="alert" className="mt-3 font-body text-sm text-pomegranate">{error}</p> : null}
+      {done ? <p className="mt-3 font-body text-sm text-tile dark:text-tile-light">Yashirildi.</p> : null}
+
+      <button
+        type="button"
+        onClick={() => hide.mutate()}
+        disabled={!valid || hide.isPending}
+        className="mt-4 rounded-stall border border-pomegranate/30 px-3.5 py-2 font-body text-sm text-pomegranate hover:bg-pomegranate/5 disabled:opacity-50"
+      >
+        {hide.isPending ? '…' : 'Yashirish'}
+      </button>
+    </section>
   );
 }
 
