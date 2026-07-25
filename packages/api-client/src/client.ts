@@ -81,6 +81,61 @@ export interface SellerStatement {
   effectiveRateBp: number | null;
 }
 
+export interface QueueDepth {
+  pending: number;
+  stale: number;
+  oldestWaitingHours: number | null;
+}
+
+export interface ModerationQueues {
+  products: QueueDepth;
+  sellerApplications: QueueDepth;
+  disputes: QueueDepth;
+}
+
+export interface AdminOverview {
+  period: { from: string; to: string; days: number };
+  orders: {
+    completed: number;
+    cancelled: number;
+    rejected: number;
+    expired: number;
+    pending: number;
+    completionRateBp: number | null;
+  };
+  money: {
+    gmvMinor: string;
+    averageOrderMinor: string;
+    commissionNetMinor: string;
+    commissionChargedMinor: string;
+    commissionReversedMinor: string;
+    topUpMinor: string;
+    effectiveRateBp: number | null;
+  };
+  participation: { newUsers: number; activeSellers: number };
+  change: { gmvBp: number | null; commissionBp: number | null };
+}
+
+export interface AdminSellerRow {
+  shopId: string;
+  name: unknown;
+  orders: number;
+  gmvMinor: string;
+  disputes: number;
+  disputeRateBp: number | null;
+}
+
+export interface CommissionRule {
+  id: string;
+  scope: string;
+  scopeId: string | null;
+  percentBp: number;
+  priority: number;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  note: string | null;
+}
+
 export interface PublicUser {
   id: string;
   phone: string;
@@ -339,6 +394,36 @@ export function createApiClient(options: ApiClientOptions) {
         }),
       report: (query: { from?: string; to?: string } = {}) =>
         request<SellerStatement>('/api/v1/seller/reports/statement', { query }),
+    },
+
+    admin: {
+      overview: (query: { from?: string; to?: string } = {}) =>
+        request<AdminOverview>('/api/v1/admin/reports/overview', { query }),
+      moderation: () => request<ModerationQueues>('/api/v1/admin/reports/moderation'),
+      sellers: (query: { from?: string; to?: string; page?: number } = {}) =>
+        request<{ sellers: AdminSellerRow[] }>('/api/v1/admin/reports/sellers', { query }),
+      commissionRules: {
+        list: () => request<CommissionRule[]>('/api/v1/admin/commission-rules'),
+        create: (input: {
+          scope: string;
+          scopeId: string | null;
+          percentBp: number;
+          minCharge?: string | null;
+          maxCharge?: string | null;
+          priority: number;
+          effectiveFrom: string;
+          note?: string;
+        }) =>
+          request<CommissionRule>('/api/v1/admin/commission-rules', {
+            method: 'POST',
+            body: JSON.stringify(input),
+          }),
+      },
+      moderateProduct: (id: string, approved: boolean, reason?: string) =>
+        request<unknown>(`/api/v1/admin/products/${id}/moderate`, {
+          method: 'POST',
+          body: JSON.stringify(reason ? { approved, reason } : { approved }),
+        }),
     },
 
     geo: {
