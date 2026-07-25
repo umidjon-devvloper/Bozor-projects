@@ -18,5 +18,6 @@ export {
   type CommissionRule,
   type SellerApplication,
   type AdminDispute,
+  type CategoryNode,
 } from './client.js';
 export { formatSom, formatQuantity, localized } from './format.js';

@@ -22,6 +22,7 @@ export function AdminHeader() {
             <Tab href="/dokonlar" active={pathname.startsWith('/dokonlar')}>Do'konlar</Tab>
             <Tab href="/hisoblar" active={pathname.startsWith('/hisoblar')}>Hisoblar</Tab>
             <Tab href="/komissiya" active={pathname.startsWith('/komissiya')}>Komissiya</Tab>
+            <Tab href="/malumotnoma" active={pathname.startsWith('/malumotnoma')}>Ma'lumotnoma</Tab>
             <Tab href="/tizim" active={pathname.startsWith('/tizim')}>Tizim</Tab>
             <button
               type="button"

@@ -160,6 +160,16 @@ export interface AdminDispute {
   createdAt: string;
 }
 
+export interface CategoryNode {
+  id: string;
+  slug: string;
+  /** Localised text, or an already-resolved string when the server localised it. */
+  name: string | Partial<Record<string, string>>;
+  parentId: string | null;
+  defaultUnit?: string;
+  children?: CategoryNode[];
+}
+
 export interface PublicUser {
   id: string;
   phone: string;
@@ -499,6 +509,18 @@ export function createApiClient(options: ApiClientOptions) {
           method: 'POST',
           body: JSON.stringify({ hide, reason }),
         }),
+      categoryTree: () => request<CategoryNode[]>('/api/v1/categories/tree'),
+      createCategory: (input: {
+        parentId: string | null;
+        name: Record<string, string>;
+        defaultUnit: string;
+        allowedUnits: string[];
+      }) =>
+        request<CategoryNode>('/api/v1/admin/categories', {
+          method: 'POST',
+          body: JSON.stringify(input),
+        }),
+      units: () => request<{ code: string; name: unknown }[]>('/api/v1/units'),
       createMarket: (input: Record<string, unknown>) =>
         request<MarketResponse>('/api/v1/admin/markets', {
           method: 'POST',
