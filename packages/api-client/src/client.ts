@@ -48,6 +48,39 @@ export interface SearchResults {
   facets?: unknown;
 }
 
+export interface SellerWallet {
+  id: string;
+  balance: { amount: string; currency: 'UZS' };
+  /** ACTIVE, GRACE or INACTIVE — an inactive wallet hides the stall from the marketplace. */
+  state: string;
+  lowBalanceThreshold: { amount: string; currency: 'UZS' };
+  deactivateBelow: { amount: string; currency: 'UZS' };
+  graceHours: number;
+  lifetimeCharged: { amount: string; currency: 'UZS' };
+  lifetimeCredited: { amount: string; currency: 'UZS' };
+  lastEntryAt: string | null;
+}
+
+export interface SellerStatementEntry {
+  id: string;
+  type: string;
+  amount: { amount: string; currency: 'UZS' };
+  occurredAt: string;
+  memo?: string | null;
+}
+
+export interface SellerStatement {
+  period: { from: string; to: string; days: number };
+  orders: { completed: number; cancelled: number };
+  gmvMinor: string;
+  commissionNetMinor: string;
+  commissionChargedMinor: string;
+  commissionReversedMinor: string;
+  topUpMinor: string;
+  adjustmentMinor: string;
+  effectiveRateBp: number | null;
+}
+
 export interface PublicUser {
   id: string;
   phone: string;
@@ -291,10 +324,21 @@ export function createApiClient(options: ApiClientOptions) {
         list: (query: { limit?: number } = {}) =>
           request<ProductResponse[]>('/api/v1/seller/products', { query }),
       },
-      wallet: () =>
-        request<{ balance: { amount: string; currency: 'UZS' }; state: string }>(
-          '/api/v1/seller/wallet',
-        ),
+      wallet: () => request<SellerWallet>('/api/v1/seller/wallet'),
+      statement: (query: { limit?: number } = {}) =>
+        request<{ entries: SellerStatementEntry[] }>('/api/v1/seller/wallet/statement', { query }),
+      setPrice: (productId: string, price: string) =>
+        request<ProductResponse>(`/api/v1/seller/products/${productId}/price`, {
+          method: 'PATCH',
+          body: JSON.stringify({ price }),
+        }),
+      setStock: (productId: string, stockQty: string) =>
+        request<ProductResponse>(`/api/v1/seller/products/${productId}/stock`, {
+          method: 'PATCH',
+          body: JSON.stringify({ stockQty }),
+        }),
+      report: (query: { from?: string; to?: string } = {}) =>
+        request<SellerStatement>('/api/v1/seller/reports/statement', { query }),
     },
 
     geo: {
