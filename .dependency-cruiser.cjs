@@ -36,7 +36,14 @@ module.exports = {
       comment: 'Mongoose models must never leave the repository layer (ADR-0011 rule 2)',
       severity: 'error',
       from: { path: '(controller|routes|service)\\.ts$' },
-      to: { path: '\\.model\\.ts$' },
+      to: {
+        path: '\\.model\\.ts$',
+        // A type import is not the model leaving anywhere: it compiles away entirely and
+        // carries no query methods. What the rule is protecting against is a service holding a
+        // Mongoose Model and querying through it, and that is a value import. Shapes declared
+        // beside a schema are the natural place for them to live.
+        dependencyTypesNot: ['type-only'],
+      },
     },
     { name: 'no-circular', severity: 'error', from: {}, to: { circular: true } },
     { name: 'no-orphans', severity: 'warn', from: { orphan: true, pathNot: '\\.d\\.ts$' }, to: {} },

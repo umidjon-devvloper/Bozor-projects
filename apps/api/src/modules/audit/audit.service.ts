@@ -2,7 +2,7 @@ import { Types } from 'mongoose';
 import type { ActorType} from '@bozorlar/types';
 import { AuditSeverity } from '@bozorlar/types';
 import { getContext, type Logger } from '@bozorlar/logger';
-import { AuditLogModel } from './audit.model.js';
+import { auditRepository } from './audit.repository.js';
 
 export interface AuditEntry {
   actorId?: string | null;
@@ -41,7 +41,7 @@ export function createAuditService(logger: Logger) {
     async record(entry: AuditEntry): Promise<void> {
       const context = getContext();
       try {
-        await AuditLogModel.create({
+        await auditRepository.insert({
           actorId: entry.actorId ? new Types.ObjectId(entry.actorId) : null,
           actorType: entry.actorType,
           action: entry.action,

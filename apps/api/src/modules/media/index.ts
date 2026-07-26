@@ -24,5 +24,5 @@ export {
   PURPOSE_POLICIES,
   UNATTACHED_TTL_HOURS,
 } from './media.constants.js';
-export { MediaStatus } from './models/mediaAsset.model.js';
+export { MediaStatus } from './media.constants.js';
 export { MediaEvents } from './events.js';

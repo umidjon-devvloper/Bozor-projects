@@ -1,10 +1,10 @@
 import { Types, type ClientSession } from 'mongoose';
 import {
   MediaAssetModel,
-  MediaStatus,
   type MediaAssetDoc,
   type MediaVariantDoc,
 } from '../models/mediaAsset.model.js';
+import { MediaStatus } from '../media.constants.js';
 import type { MediaPurpose, MediaVisibility } from '../media.constants.js';
 
 export interface MediaAssetRecord {

@@ -13,7 +13,7 @@ import {
   UNATTACHED_TTL_HOURS,
   UPLOAD_URL_TTL_SECONDS,
 } from '../media.constants.js';
-import { MediaStatus } from '../models/mediaAsset.model.js';
+import { MediaStatus } from '../media.constants.js';
 import {
   mediaAssetRepository,
   type MediaAssetRecord,

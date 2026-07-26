@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Types, type ClientSession } from 'mongoose';
 import { getContext } from '@bozorlar/logger';
-import { OutboxModel } from './outbox.model.js';
+import { outboxRepository } from './outbox.repository.js';
 
 export interface DomainEventInput {
   type: string;
@@ -21,22 +21,20 @@ export const outboxService = {
    */
   async publish(event: DomainEventInput, session: ClientSession): Promise<string> {
     const eventId = randomUUID();
-    await OutboxModel.create(
-      [
-        {
-          eventId,
-          type: event.type,
-          version: event.version ?? 1,
-          aggregateType: event.aggregateType,
-          aggregateId: event.aggregateId,
-          payload: event.payload,
-          traceId: getContext()?.traceId ?? null,
-          actorId: event.actorId ? new Types.ObjectId(event.actorId) : null,
-          actorType: event.actorType ?? 'SYSTEM',
-          occurredAt: new Date(),
-        },
-      ],
-      { session },
+    await outboxRepository.insert(
+      {
+        eventId,
+        type: event.type,
+        version: event.version ?? 1,
+        aggregateType: event.aggregateType,
+        aggregateId: event.aggregateId,
+        payload: event.payload,
+        traceId: getContext()?.traceId ?? null,
+        actorId: event.actorId ? new Types.ObjectId(event.actorId) : null,
+        actorType: event.actorType ?? 'SYSTEM',
+        occurredAt: new Date(),
+      },
+      session,
     );
     return eventId;
   },
@@ -47,7 +45,7 @@ export const outboxService = {
    */
   async publishStandalone(event: DomainEventInput): Promise<string> {
     const eventId = randomUUID();
-    await OutboxModel.create({
+    await outboxRepository.insert({
       eventId,
       type: event.type,
       version: event.version ?? 1,

@@ -1,19 +1,7 @@
+import { MediaStatus } from '../media.constants.js';
 import { Schema, model, type Model, type Types } from 'mongoose';
 import { MediaPurpose, MediaVisibility } from '../media.constants.js';
 
-export const MediaStatus = {
-  /** Presigned URL issued; the object may or may not exist yet. */
-  PENDING: 'PENDING',
-  /** Verified, scanned, processed, and moved to its final bucket. */
-  CONFIRMED: 'CONFIRMED',
-  /** Referenced by a shop, product, review or application. */
-  ATTACHED: 'ATTACHED',
-  /** Never confirmed or never attached; swept from storage. */
-  ORPHANED: 'ORPHANED',
-  /** Rejected by validation or the scanner. Kept as a record; bytes removed. */
-  REJECTED: 'REJECTED',
-} as const;
-export type MediaStatus = (typeof MediaStatus)[keyof typeof MediaStatus];
 
 export interface MediaVariantDoc {
   name: string;
