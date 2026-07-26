@@ -74,7 +74,15 @@ export function createVisibilitySweeper(redis: Redis, logger: Logger) {
 
       operations.push({
         updateOne: {
-          filter: { _id: shop._id },
+          /**
+           * The vacation condition is repeated in the filter, not just in the query above.
+           *
+           * The shops were read before this write is built, and a seller extending their
+           * vacation in between would have it silently cleared — their stall would reappear in
+           * the marketplace on a day they had said they were closed, and the first they would
+           * know is an order they cannot fill.
+           */
+          filter: { _id: shop._id, vacationUntil: { $ne: null, $lte: now } },
           update: {
             $set: {
               vacationUntil: null,
@@ -89,9 +97,14 @@ export function createVisibilitySweeper(redis: Redis, logger: Logger) {
 
     if (operations.length === 0) return 0;
     // ordered: false so one failing document does not abandon the rest of the batch.
-    await shops.bulkWrite(operations, { ordered: false });
-    logger.info({ count: operations.length }, 'vacation expiry sweep applied');
-    return operations.length;
+    const result = await shops.bulkWrite(operations, { ordered: false });
+    // What was attempted and what actually changed differ whenever a filter above no longer
+    // matched, which is the case this guard exists for.
+    logger.info(
+      { count: result.modifiedCount, attempted: operations.length },
+      'vacation expiry sweep applied',
+    );
+    return result.modifiedCount;
   }
 
   async function tick(): Promise<void> {

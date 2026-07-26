@@ -66,17 +66,31 @@ export function createOrphanMediaSweeper(redis: Redis, storage: StorageRemover, 
 
     if (candidates.length === 0) return 0;
 
+    /**
+     * Claim the asset before deleting anything it points at.
+     *
+     * The candidates were read a moment ago, and a seller attaching an image to a product in
+     * that window would have had the file deleted underneath them — the product would carry a
+     * broken image and the asset row would say ORPHANED, so nothing would ever restore it.
+     * Deleting first and marking afterwards makes that window as wide as an object-store call.
+     *
+     * The compare-and-set is on the status the candidate was found with, so an asset that has
+     * moved on since is skipped and keeps its files.
+     */
+    let reclaimed = 0;
     for (const asset of candidates) {
+      const claimed = await collection.updateOne(
+        { _id: asset._id, status: asset.status },
+        { $set: { status: 'ORPHANED', updatedAt: now } },
+      );
+      if (claimed.modifiedCount !== 1) continue;
+
       await removeObjects(asset);
+      reclaimed += 1;
     }
 
-    await collection.updateMany(
-      { _id: { $in: candidates.map((asset) => asset._id) } },
-      { $set: { status: 'ORPHANED', updatedAt: now } },
-    );
-
-    logger.info({ count: candidates.length }, 'orphaned media reclaimed');
-    return candidates.length;
+    logger.info({ count: reclaimed, considered: candidates.length }, 'orphaned media reclaimed');
+    return reclaimed;
   }
 
   async function tick(): Promise<void> {
