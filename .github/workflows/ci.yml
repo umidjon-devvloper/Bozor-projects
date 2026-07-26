@@ -18,7 +18,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm lint
-      - name: Module boundaries (ADR-0011)
+      # Runs the shared backend config and then each frontend app's own, because a Next app's
+      # `@/*` alias only resolves against that app's tsconfig.
+      - name: Module boundaries (ADR-0011, backend and per-app)
         run: pnpm boundaries
       - run: pnpm test
       - run: pnpm build

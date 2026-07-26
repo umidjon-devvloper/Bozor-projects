@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint app src",
     "test": "vitest run --passWithNoTests",
-    "build": "echo \"Expo apps build through EAS, not through turbo\" && exit 0"
+    "build": "echo \"Expo apps build through EAS, not through turbo\" && exit 0",
+    "boundaries": "depcruise --config ../../.dependency-cruiser.frontend.cjs src app"
   },
   "dependencies": {
     "@bozorlar/api-client": "workspace:*",
