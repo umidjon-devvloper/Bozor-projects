@@ -122,12 +122,43 @@ export const reservationRepository = {
     );
   },
 
-  async findActiveByHolder(holderId: string): Promise<ReservationRecord[]> {
+  /**
+   * The session is not optional in practice: every caller releases these rows inside a
+   * transaction, and reading them outside it means acting on a picture that another
+   * transaction may already have changed.
+   */
+  async findActiveByHolder(
+    holderId: string,
+    session?: ClientSession,
+  ): Promise<ReservationRecord[]> {
     const docs = await StockReservationModel.find({
       holderId,
       status: ReservationStatus.ACTIVE,
-    }).lean<StockReservationDoc[]>();
+    })
+      .session(session ?? null)
+      .lean<StockReservationDoc[]>();
     return docs.map(toRecord);
+  },
+
+  /**
+   * Claims one reservation for release.
+   *
+   * Returns whether this caller is the one that moved it out of ACTIVE. Stock must only be
+   * given back by whoever wins here: the checkout path releases a superseded quote's holds at
+   * the same time as the sweeper may be expiring them, and both decrementing one hold makes a
+   * product look like it has stock nobody is holding.
+   */
+  async claimForRelease(
+    reservationId: string,
+    status: ReservationStatus,
+    session: ClientSession,
+  ): Promise<boolean> {
+    const result = await StockReservationModel.updateOne(
+      { _id: new Types.ObjectId(reservationId), status: ReservationStatus.ACTIVE },
+      { $set: { status, releasedAt: new Date() } },
+      { session },
+    );
+    return result.modifiedCount === 1;
   },
 
   async markStatus(

@@ -202,19 +202,24 @@ export function createOrderService(deps: {
   /** Returns held stock and closes the reservations. Used by every cancelling path. */
   async function releaseStock(order: OrderRecord, session: mongoose.ClientSession): Promise<void> {
     if (!STOCK_HELD_STATUSES.includes(order.status)) return;
-    const held = await reservationRepository.findActiveByHolder(order.id);
+    const held = await reservationRepository.findActiveByHolder(order.id, session);
+    // Claim before releasing — the same reasoning as `releaseHolds` in checkout and the two
+    // sweepers. Every cancelling path reaches here, and the reservation sweeper can be
+    // expiring the very same holds on its own clock.
     for (const reservation of held) {
+      const claimed = await reservationRepository.claimForRelease(
+        reservation.id,
+        ReservationStatus.RELEASED,
+        session,
+      );
+      if (!claimed) continue;
+
       await reservationRepository.releaseHold(
         reservation.productId,
         Quantity.of(reservation.qtyMilli, 'unit'),
         session,
       );
     }
-    await reservationRepository.markStatus(
-      held.map((reservation) => reservation.id),
-      ReservationStatus.RELEASED,
-      session,
-    );
   }
 
   return {

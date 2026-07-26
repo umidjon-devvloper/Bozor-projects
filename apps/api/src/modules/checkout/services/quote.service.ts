@@ -307,21 +307,35 @@ export function createQuoteService(deps: {
       status: ReservationStatus,
       session: mongoose.ClientSession,
     ): Promise<number> {
-      const active = await reservationRepository.findActiveByHolder(holderId);
+      const active = await reservationRepository.findActiveByHolder(holderId, session);
       if (active.length === 0) return 0;
 
+      /**
+       * Claim each hold before giving its stock back.
+       *
+       * Releasing first and marking afterwards let two paths decrement the same hold: this one
+       * runs when a buyer supersedes their own quote, and the reservation sweeper runs on its
+       * own clock against the same rows. Only one of them would win the status update, but both
+       * would have moved the stock — and a product that looks like it has stock nobody holds is
+       * a buyer walking to a bazaar for goods that are not there.
+       */
+      let released = 0;
       for (const reservation of active) {
+        const claimed = await reservationRepository.claimForRelease(
+          reservation.id,
+          status,
+          session,
+        );
+        if (!claimed) continue;
+
         await reservationRepository.releaseHold(
           reservation.productId,
           Quantity.of(reservation.qtyMilli, 'unit'),
           session,
         );
+        released += 1;
       }
-      return reservationRepository.markStatus(
-        active.map((reservation) => reservation.id),
-        status,
-        session,
-      );
+      return released;
     },
 
     /** Totals as value objects, for the response mapper. */
