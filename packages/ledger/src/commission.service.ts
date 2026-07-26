@@ -77,6 +77,20 @@ export interface ChargeResult {
   reason?: CommissionFailureReason;
 }
 
+/**
+ * MongoDB reports a unique-index collision as error code 11000, on both the driver's
+ * `MongoServerError` and the wrapper Mongoose throws. Matched on the code rather than the
+ * message, which is not stable across versions or locales.
+ */
+function isDuplicateKey(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: unknown }).code === 11000
+  );
+}
+
 export function createCommissionService(deps: {
   orders: OrderCommissionWriter;
   events: EventPublisher;
@@ -212,6 +226,23 @@ export function createCommissionService(deps: {
           );
           return { charged: true, amount };
         });
+      } catch (error) {
+        /**
+         * A duplicate entry key means somebody else charged this order between the check above
+         * and this write — two redeliveries of `order.completed` racing each other.
+         *
+         * The unique index is what actually prevents the double charge, and it does its job.
+         * What was missing is the reading: an already-charged order surfaced as an error, the
+         * relay counted a failed attempt, and with attempts now capped that could push a
+         * correctly-charged order into the set-aside pile looking like a billing failure.
+         * It is not a failure. It is the answer arriving from another worker.
+         */
+        if (isDuplicateKey(error)) {
+          const charged = await ledgerRepository.findByKey(entryKey);
+          logger.debug({ orderId: order.id }, 'commission charged concurrently; treating as done');
+          return charged ? { charged: true, amount: charged.total } : { charged: true, amount };
+        }
+        throw error;
       } finally {
         await session.endSession();
       }
@@ -359,16 +390,25 @@ export function createCommissionService(deps: {
             session,
           );
           await events.publish(
-              {
+            {
               type: WalletEvents.COMMISSION_REVERSED,
               aggregateType: 'order',
               aggregateId: orderId,
               payload: { orderId, amount: amount.toStorage(), reason },
               actorId,
-                          },
+            },
             session,
           );
         });
+      } catch (error) {
+        // Same reasoning as the charge: a concurrent reversal is the answer, not a fault. A
+        // refund posted twice would be the more expensive mistake, and the unique key stops
+        // it; this only stops the caller being told it failed.
+        if (isDuplicateKey(error)) {
+          const reversed = await ledgerRepository.findByKey(reversalKey);
+          if (reversed) return reversed.total;
+        }
+        throw error;
       } finally {
         await session.endSession();
       }
