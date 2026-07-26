@@ -84,6 +84,8 @@ export function createWalletController(wallet: WalletService) {
 
     async adjust(req: Request, res: Response): Promise<void> {
       const auth = requireAuth(req);
+      // Present by definition: the idempotency middleware rejects the request without it.
+      const requestKey = req.header('idempotency-key') ?? '';
       const body = req.body as {
         sellerId: string;
         amount: string;
@@ -98,6 +100,7 @@ export function createWalletController(wallet: WalletService) {
         reason: body.reason,
         actorId: auth.userId,
         approvedBy: body.approvedBy,
+        requestKey,
       });
       noStore(res);
       sendCreated(res, toWalletResponse(updated));

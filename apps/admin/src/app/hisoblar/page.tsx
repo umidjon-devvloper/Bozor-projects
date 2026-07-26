@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApiError, formatSom } from '@bozorlar/api-client';
 import { useApi, useSession } from '@bozorlar/session';
@@ -49,6 +49,15 @@ export default function WalletPage() {
       setError(caught instanceof ApiError ? (caught.detail ?? caught.message) : 'Bajarilmadi.'),
   });
 
+  /**
+   * One key per form, regenerated only after a successful write.
+   *
+   * A retry after a timeout must carry the key of the attempt it is retrying, or the server
+   * treats it as a new adjustment and moves the money twice — which on this page means real
+   * money, since manual credits are the only way to top a seller up today.
+   */
+  const requestKey = useRef(crypto.randomUUID());
+
   const adjust = useMutation({
     mutationFn: () =>
       api.admin.adjust({
@@ -58,13 +67,15 @@ export default function WalletPage() {
         direction,
         reason: reason.trim(),
         ...(approvedBy.trim() ? { approvedBy: approvedBy.trim() } : {}),
-      }),
+      }, requestKey.current),
     onSuccess: () => {
       setAmount('');
       setReason('');
       setApprovedBy('');
       setError(null);
       setDone('Yozuv kiritildi.');
+      // The next adjustment is a new attempt and must not reuse this one's key.
+      requestKey.current = crypto.randomUUID();
       void queryClient.invalidateQueries({ queryKey: ['admin-wallet', lookedUp] });
     },
     onError: (caught) =>

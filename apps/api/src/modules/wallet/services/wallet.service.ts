@@ -56,6 +56,12 @@ export function createWalletService(deps: {
       reason: string;
       actorId: string;
       approvedBy?: string | undefined;
+      /**
+       * The caller's idempotency key, which the route already requires. Threaded down so the
+       * ledger entry is keyed on the same value the HTTP layer deduplicates on, rather than on
+       * a clock that makes every attempt look new.
+       */
+      requestKey: string;
     }): Promise<WalletRecord> {
       if (!input.amount.isPositive()) {
         throw new AppError(ErrorCode.MONEY_INVALID_AMOUNT, {
@@ -84,7 +90,16 @@ export function createWalletService(deps: {
 
       const wallet = await walletRepository.ensureFor(input.sellerId);
       const isCredit = input.direction === 'CREDIT';
-      const entryKey = `manual:${input.direction.toLowerCase()}:${wallet.id}:${Date.now()}`;
+      /**
+       * Keyed on the caller's request, not on the clock.
+       *
+       * `Date.now()` made every attempt unique, which defeated the whole point of the ledger's
+       * unique index: a retry would post a second entry and move real money twice. The HTTP
+       * layer's idempotency middleware caught most of that, but it is a cache with a lifetime,
+       * and the ledger is the record that has to be right afterwards. Now the two agree, and
+       * the index is a real second line rather than decoration.
+       */
+      const entryKey = `manual:${input.direction.toLowerCase()}:${wallet.id}:${input.requestKey}`;
 
       const session = await mongoose.startSession();
       try {

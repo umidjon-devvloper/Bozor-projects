@@ -515,15 +515,25 @@ export function createApiClient(options: ApiClientOptions) {
        * A manual movement. `approvedBy` is required above the dual-control threshold and must
        * be a different administrator — the server rejects self-approval.
        */
-      adjust: (input: {
-        sellerId: string;
-        amount: string;
-        direction: 'CREDIT' | 'DEBIT';
-        reason: string;
-        approvedBy?: string;
-      }) =>
+      /**
+       * The endpoint requires an Idempotency-Key and rejects a request without one, so this
+       * call could never have succeeded without it. The key belongs to the attempt rather than
+       * to the client: the caller passes the same value when retrying a request that timed out,
+       * and gets the original adjustment back instead of a second credit.
+       */
+      adjust: (
+        input: {
+          sellerId: string;
+          amount: string;
+          direction: 'CREDIT' | 'DEBIT';
+          reason: string;
+          approvedBy?: string;
+        },
+        idempotencyKey: string,
+      ) =>
         request<SellerWallet>('/api/v1/admin/ledger/adjustments', {
           method: 'POST',
+          headers: { 'Idempotency-Key': idempotencyKey },
           body: JSON.stringify(input),
         }),
       shopQueue: (query: { limit?: number | undefined } = {}) =>
