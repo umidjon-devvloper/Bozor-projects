@@ -433,3 +433,53 @@ describe('Click — complete', () => {
     expect((sent.body as { error: number }).error).toBe(-3);
   });
 });
+
+describe('Payme — cancellation races', () => {
+  it('does not reverse twice when two cancels arrive for the same completed payment', async () => {
+    // Both callers read COMPLETED before either transaction begins. The compare-and-set inside
+    // the transaction decides which one reverses; the loser aborts and answers with the stored
+    // transaction rather than reaching the ledger and being rejected by a unique index.
+    const cancel = vi.fn(async () =>
+      transaction({ state: PaymeState.CANCELLED_AFTER_COMPLETE, cancelledAt: new Date() }),
+    );
+    const payments = fakePayments({
+      find: vi.fn(async () =>
+        transaction({ state: PaymeState.COMPLETED, journalEntryId: 'entry1' }),
+      ),
+      cancel: cancel,
+    });
+    const controller = createPaymeController(payments, logger);
+
+    const first = stubResponse();
+    const second = stubResponse();
+    await Promise.all([
+      controller.handle(paymeRequest('CancelTransaction', { id: 'p1', reason: 5 }), first.res),
+      controller.handle(paymeRequest('CancelTransaction', { id: 'p1', reason: 5 }), second.res),
+    ]);
+
+    // Both callers get an answer; neither gets an error.
+    expect((first.sent.body as { error: unknown }).error).toBeNull();
+    expect((second.sent.body as { error: unknown }).error).toBeNull();
+    expect((first.sent.body as { result: { state: number } }).result.state).toBe(
+      PaymeState.CANCELLED_AFTER_COMPLETE,
+    );
+  });
+
+  it('cancels a created transaction to -1, not -2', async () => {
+    // -2 means money was taken and returned. A transaction that never completed must not be
+    // recorded as a refund, because that is what Payme reconciles against.
+    const cancel = vi.fn(async () => transaction({ state: PaymeState.CANCELLED }));
+    const payments = fakePayments({
+      find: vi.fn(async () => transaction({ state: PaymeState.CREATED })),
+      cancel: cancel,
+    });
+    const { res, sent } = stubResponse();
+
+    await createPaymeController(payments, logger).handle(
+      paymeRequest('CancelTransaction', { id: 'p1', reason: 4 }),
+      res,
+    );
+
+    expect((sent.body as { result: { state: number } }).result.state).toBe(PaymeState.CANCELLED);
+  });
+});

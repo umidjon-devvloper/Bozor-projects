@@ -93,16 +93,28 @@ export const paymentTransactionRepository = {
     return result.modifiedCount === 1;
   },
 
+  /**
+   * Moves a transaction to a cancelled state, but only from the state the decision was taken
+   * against.
+   *
+   * `fromState` rather than "any state that is not the target": the caller decides whether to
+   * post a reversing journal entry by reading the transaction *before* the transaction begins,
+   * and two concurrent cancels of the same completed payment would both read COMPLETED. An
+   * exact compare-and-set means one of them loses here and rolls its reversal back, instead of
+   * both reaching the ledger and relying on the unique entry key to reject the second as a
+   * duplicate-key error nobody asked for.
+   */
   async markCancelled(
     id: string,
-    state: number,
+    fromState: number,
+    toState: number,
     reason: number,
     cancelledAt: Date,
     session?: ClientSession,
   ): Promise<boolean> {
     const result = await PaymentTransactionModel.updateOne(
-      { _id: new Types.ObjectId(id), state: { $nin: [state] } },
-      { $set: { state, reason, cancelledAt } },
+      { _id: new Types.ObjectId(id), state: fromState },
+      { $set: { state: toState, reason, cancelledAt } },
       session ? { session } : {},
     );
     return result.modifiedCount === 1;

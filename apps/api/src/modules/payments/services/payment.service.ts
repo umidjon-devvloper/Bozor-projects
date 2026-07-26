@@ -206,13 +206,22 @@ export function createPaymentService(deps: { logger: Logger }) {
             );
           }
 
-          await paymentTransactionRepository.markCancelled(
+          /**
+           * The same ordering as `perform`: the state moves inside the transaction, and losing
+           * the compare-and-set aborts everything above it. Without this the reversal is
+           * already in the ledger by the time we discover somebody else cancelled first, and
+           * the only thing stopping a second refund is a unique index throwing a duplicate-key
+           * error — protection by accident rather than by design.
+           */
+          const won = await paymentTransactionRepository.markCancelled(
             transaction.id,
+            transaction.state,
             nextState,
             reason,
             now,
             session,
           );
+          if (!won) throw new Error('PAYMENT_ALREADY_CANCELLED');
         });
 
         logger.warn(
@@ -223,6 +232,17 @@ export function createPaymentService(deps: { logger: Logger }) {
           transaction.provider,
           transaction.providerTransactionId,
         );
+      } catch (error) {
+        // Losing the race is not a failure to report: the transaction is cancelled, which is
+        // what the caller asked for, and the provider must receive the stored answer rather
+        // than an error that would make it retry a cancellation already carried out.
+        if (error instanceof Error && error.message === 'PAYMENT_ALREADY_CANCELLED') {
+          return paymentTransactionRepository.findByProviderId(
+            transaction.provider,
+            transaction.providerTransactionId,
+          );
+        }
+        throw error;
       } finally {
         await session.endSession();
       }
