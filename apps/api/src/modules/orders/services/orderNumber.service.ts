@@ -1,5 +1,5 @@
 import type { ClientSession } from 'mongoose';
-import { CounterModel } from '../models/counter.model.js';
+import { counterRepository } from '../repositories/counter.repository.js';
 
 /**
  * Human-readable order numbers: `BZ-260728-000142`.
@@ -13,12 +13,7 @@ function todayKey(now: Date): string {
 }
 
 async function nextSequence(scope: string, now: Date, session: ClientSession): Promise<number> {
-  const doc = await CounterModel.findOneAndUpdate(
-    { _id: `${scope}:${todayKey(now)}` },
-    { $inc: { seq: 1 } },
-    { new: true, upsert: true, session },
-  ).lean<{ seq: number }>();
-  return doc.seq;
+  return counterRepository.nextSequence(`${scope}:${todayKey(now)}`, session);
 }
 
 export async function nextOrderNumber(now: Date, session: ClientSession): Promise<string> {

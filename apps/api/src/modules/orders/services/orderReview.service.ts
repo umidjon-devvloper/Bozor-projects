@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-import { OrderModel } from '../models/order.model.js';
+import { orderRepository } from '../repositories/order.repository.js';
 import type { OrderStatus } from '@bozorlar/domain';
 
 /**
@@ -21,15 +21,7 @@ export const orderReviewLookup = {
     buyerName: string;
   } | null> {
     if (!Types.ObjectId.isValid(orderId)) return null;
-    const doc = await OrderModel.findById(orderId, {
-      orderNo: 1,
-      buyerId: 1,
-      shopId: 1,
-      status: 1,
-      statusHistory: 1,
-      'lines.productId': 1,
-      'buyerSnapshot.name': 1,
-    }).lean();
+    const doc = await orderRepository.findForReview(orderId);
     if (!doc) return null;
 
     // Completion time comes from the status history rather than a dedicated field, so the

@@ -113,4 +113,30 @@ export const marketRepository = {
       session ? { session } : {},
     );
   },
+  /**
+   * Creates a market inside the caller's transaction.
+   *
+   * The array form of `create` is the only overload that accepts a session, which is why the
+   * signature looks odd for a single document — the market and the event announcing it must
+   * commit together or neither.
+   */
+  async create(doc: Record<string, unknown>, session: ClientSession): Promise<string> {
+    const [created] = await MarketModel.create([doc], { session });
+    if (!created) throw new Error('Market insert returned nothing');
+    return created._id.toString();
+  },
+
+  async applyPatch(
+    marketId: string,
+    patch: Record<string, unknown>,
+    session: ClientSession,
+  ): Promise<void> {
+    await MarketModel.updateOne({ _id: marketId }, { $set: patch }, { session });
+  },
+
+  /** Closing a market hides every stall inside it, so this only ever runs in a transaction. */
+  async setStatus(marketId: string, status: string, session: ClientSession): Promise<void> {
+    await MarketModel.updateOne({ _id: marketId }, { $set: { status } }, { session });
+  },
+
 };

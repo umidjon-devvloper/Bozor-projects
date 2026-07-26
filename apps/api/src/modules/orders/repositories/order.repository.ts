@@ -280,4 +280,24 @@ export const orderRepository = {
       .lean<OrderDoc[]>();
     return docs.map(toRecord);
   },
+  /**
+   * The projection the review window needs, and nothing else.
+   *
+   * Kept as its own method rather than reusing a general read: an order document carries every
+   * line, every status change and the buyer snapshot, and a review check that pulled all of it
+   * would be the most expensive query on a page nobody thinks of as expensive.
+   */
+  async findForReview(orderId: string): Promise<OrderDoc | null> {
+    if (!Types.ObjectId.isValid(orderId)) return null;
+    return OrderModel.findById(orderId, {
+      orderNo: 1,
+      buyerId: 1,
+      shopId: 1,
+      status: 1,
+      statusHistory: 1,
+      'lines.productId': 1,
+      'buyerSnapshot.name': 1,
+    }).lean<OrderDoc>();
+  },
+
 };

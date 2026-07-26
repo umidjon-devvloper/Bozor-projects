@@ -8,7 +8,6 @@ import {
   type LocalizedText,
   type WorkingHoursEntry,
 } from '@bozorlar/types';
-import { MarketModel } from '../models/market.model.js';
 import { geoRepository } from '../repositories/geo.repository.js';
 import { marketRepository, type MarketRecord } from '../repositories/market.repository.js';
 import { shopRepository } from '../repositories/shop.repository.js';
@@ -74,29 +73,25 @@ export function createMarketService(deps: { cache: Cache; audit: AuditService; l
       let marketId: string;
       try {
         marketId = await session.withTransaction(async () => {
-          const [doc] = await MarketModel.create(
-            [
-              {
-                districtId: new mongoose.Types.ObjectId(district.id),
-                regionId: new mongoose.Types.ObjectId(district.regionId),
-                name: command.name,
-                slug,
-                description: command.description ?? null,
-                address: command.address,
-                location: {
-                  type: 'Point' as const,
-                  coordinates: [command.location.lng, command.location.lat],
-                },
-                workingHours: command.workingHours,
-                timezone: command.timezone ?? 'Asia/Tashkent',
-                contactPhone: command.contactPhone ?? null,
-                sections: command.sections ?? [],
+          const id = await marketRepository.create(
+            {
+              districtId: new mongoose.Types.ObjectId(district.id),
+              regionId: new mongoose.Types.ObjectId(district.regionId),
+              name: command.name,
+              slug,
+              description: command.description ?? null,
+              address: command.address,
+              location: {
+                type: 'Point' as const,
+                coordinates: [command.location.lng, command.location.lat],
               },
-            ],
-            { session },
+              workingHours: command.workingHours,
+              timezone: command.timezone ?? 'Asia/Tashkent',
+              contactPhone: command.contactPhone ?? null,
+              sections: command.sections ?? [],
+            },
+            session,
           );
-          if (!doc) throw new Error('Market creation returned no document');
-          const id = doc._id.toString();
 
           await outboxService.publish(
             {
@@ -152,7 +147,7 @@ export function createMarketService(deps: { cache: Cache; audit: AuditService; l
       const session = await mongoose.startSession();
       try {
         await session.withTransaction(async () => {
-          await MarketModel.updateOne({ _id: existing.id }, { $set: patch }, { session });
+          await marketRepository.applyPatch(existing.id, patch, session);
           await outboxService.publish(
             {
               type: GeoEvents.MARKET_UPDATED,
@@ -210,7 +205,7 @@ export function createMarketService(deps: { cache: Cache; audit: AuditService; l
       let shopsAffected = 0;
       try {
         shopsAffected = await session.withTransaction(async () => {
-          await MarketModel.updateOne({ _id: existing.id }, { $set: { status } }, { session });
+          await marketRepository.setStatus(existing.id, status, session);
 
           const affected =
             status === MarketStatus.ACTIVE
