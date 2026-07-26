@@ -120,7 +120,12 @@ export function createOrderTimersSweeper(redis: Redis, logger: Logger) {
       .toArray();
     if (due.length === 0) return 0;
 
+    let moved = 0;
+    let failed = 0;
     for (const order of due) {
+      // One bad row must not end the batch, and must not end the three sweeps that run
+      // after this one — a deterministic failure here would otherwise block commission
+      // charging and dispute escalation for as long as the row survives.
       const session = await mongoose.startSession();
       try {
         await session.withTransaction(async () => {
@@ -157,13 +162,17 @@ export function createOrderTimersSweeper(redis: Redis, logger: Logger) {
 
           await releaseStockFor(order._id, session);
           await publish(session, 'order.expired', order, { reason: 'ACCEPT_WINDOW_EXPIRED' });
+          moved += 1;
         });
+      } catch (error) {
+        failed += 1;
+        logger.error({ err: error, orderId: order._id.toString() }, 'sweep step failed: expiring an unaccepted order');
       } finally {
         await session.endSession();
       }
     }
-    logger.info({ count: due.length }, 'unaccepted orders expired');
-    return due.length;
+    logger.info({ count: moved, failed }, 'unaccepted orders expired');
+    return moved;
   }
 
   /**
@@ -182,7 +191,12 @@ export function createOrderTimersSweeper(redis: Redis, logger: Logger) {
       .toArray();
     if (due.length === 0) return 0;
 
+    let moved = 0;
+    let failed = 0;
     for (const order of due) {
+      // One bad row must not end the batch, and must not end the three sweeps that run
+      // after this one — a deterministic failure here would otherwise block commission
+      // charging and dispute escalation for as long as the row survives.
       const session = await mongoose.startSession();
       try {
         await session.withTransaction(async () => {
@@ -213,13 +227,17 @@ export function createOrderTimersSweeper(redis: Redis, logger: Logger) {
             completedAt: now.toISOString(),
             autoCompleted: true,
           });
+          moved += 1;
         });
+      } catch (error) {
+        failed += 1;
+        logger.error({ err: error, orderId: order._id.toString() }, 'sweep step failed: auto-completing an order');
       } finally {
         await session.endSession();
       }
     }
-    logger.info({ count: due.length }, 'orders auto-completed');
-    return due.length;
+    logger.info({ count: moved, failed }, 'orders auto-completed');
+    return moved;
   }
 
   /** Adjustments the buyer never answered. Cancelled with no penalty to either side. */
@@ -233,7 +251,12 @@ export function createOrderTimersSweeper(redis: Redis, logger: Logger) {
       .toArray();
     if (due.length === 0) return 0;
 
+    let moved = 0;
+    let failed = 0;
     for (const adjustment of due) {
+      // One bad row must not end the batch, and must not end the three sweeps that run
+      // after this one — a deterministic failure here would otherwise block commission
+      // charging and dispute escalation for as long as the row survives.
       const session = await mongoose.startSession();
       try {
         await session.withTransaction(async () => {
@@ -274,13 +297,17 @@ export function createOrderTimersSweeper(redis: Redis, logger: Logger) {
           );
           await releaseStockFor(order._id, session);
           await publish(session, 'order.cancelled', order, { reason: 'ADJUSTMENT_TIMEOUT' });
+          moved += 1;
         });
+      } catch (error) {
+        failed += 1;
+        logger.error({ err: error, adjustmentId: adjustment._id.toString() }, 'sweep step failed: cancelling a stale adjustment');
       } finally {
         await session.endSession();
       }
     }
-    logger.info({ count: due.length }, 'stale adjustments cancelled');
-    return due.length;
+    logger.info({ count: moved, failed }, 'stale adjustments cancelled');
+    return moved;
   }
 
   /**
@@ -299,11 +326,16 @@ export function createOrderTimersSweeper(redis: Redis, logger: Logger) {
       .toArray();
     if (overdue.length === 0) return 0;
 
+    let moved = 0;
+    let failed = 0;
     for (const dispute of overdue) {
+      // One bad row must not end the batch, and must not end the three sweeps that run
+      // after this one — a deterministic failure here would otherwise block commission
+      // charging and dispute escalation for as long as the row survives.
       const session = await mongoose.startSession();
       try {
         await session.withTransaction(async () => {
-          const moved = await db
+          const updated = await db
             .collection('disputes')
             .updateOne(
               { _id: dispute._id, status: 'OPEN' },
@@ -311,7 +343,7 @@ export function createOrderTimersSweeper(redis: Redis, logger: Logger) {
               { session },
             );
           // The seller answered in the same instant; their write wins.
-          if (moved.modifiedCount !== 1) return;
+          if (updated.modifiedCount !== 1) return;
           await db.collection('outbox').insertOne(
             {
               eventId: crypto.randomUUID(),
@@ -332,23 +364,45 @@ export function createOrderTimersSweeper(redis: Redis, logger: Logger) {
             },
             { session },
           );
+          moved += 1;
         });
+      } catch (error) {
+        failed += 1;
+        logger.error({ err: error, disputeId: dispute._id.toString() }, 'sweep step failed: escalating a dispute');
       } finally {
         await session.endSession();
       }
     }
-    logger.info({ count: overdue.length }, 'disputes escalated for no seller response');
-    return overdue.length;
+    logger.info({ count: moved, failed }, 'disputes escalated for no seller response');
+    return moved;
   }
 
+  /**
+   * The four sweeps run independently.
+   *
+   * They were chained with `+`, which meant a throw in the first prevented the other three from
+   * running at all — an unexpirable order would have stopped commission being charged and
+   * disputes being escalated, indefinitely, while the log showed only the first failure. They
+   * answer separate questions and share nothing but a clock.
+   */
   async function sweepOnce(): Promise<number> {
     const now = new Date();
-    return (
-      (await expireUnaccepted(now)) +
-      (await autoComplete(now)) +
-      (await expireAdjustments(now)) +
-      (await escalateDisputes(now))
-    );
+    const steps: [string, () => Promise<number>][] = [
+      ['expireUnaccepted', () => expireUnaccepted(now)],
+      ['autoComplete', () => autoComplete(now)],
+      ['expireAdjustments', () => expireAdjustments(now)],
+      ['escalateDisputes', () => escalateDisputes(now)],
+    ];
+
+    let total = 0;
+    for (const [name, step] of steps) {
+      try {
+        total += await step();
+      } catch (error) {
+        logger.error({ err: error, step: name }, 'order timer sweep step failed');
+      }
+    }
+    return total;
   }
 
   async function tick(): Promise<void> {
