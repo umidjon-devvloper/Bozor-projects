@@ -484,8 +484,27 @@ export function createDisputeService(deps: {
         dispute.orderTotal.minor,
       );
 
-      // Reversed before the transaction: the ledger owns its own atomicity and its entry key
-      // makes a repeat harmless, so a retry cannot double-credit the seller.
+      /**
+       * Reversed before the transaction: the ledger owns its own atomicity and its entry key
+       * makes a repeat harmless, so a retry cannot double-credit the seller.
+       *
+       * That covers a retry. It does not cover two moderators resolving this dispute at the
+       * same moment with different outcomes. Both would pass the UNDER_REVIEW check above; one
+       * reverses commission and the other does not; whichever wins the compare-and-set below
+       * writes the resolution. If the winner chose no refund, the ledger keeps a reversal
+       * attributed to a dispute whose recorded outcome says none was due — money moved for a
+       * decision nobody made.
+       *
+       * The correct order is to claim the dispute first and reverse afterwards, which turns
+       * that into the opposite and much better failure: a recorded refund with no ledger entry,
+       * which reconciliation surfaces instead of hiding. It is not changed here because the
+       * reordering needs two writes to the dispute and a compensating path if the reversal
+       * then fails, and none of that can be verified until the integration suites run.
+       *
+       * Until then the window is narrow — the panel would have to hand the same dispute to two
+       * moderators at once — and a claim step on disputes, which seller applications already
+       * have, would close it without touching this ordering at all.
+       */
       let reversed = Money.zero();
       if (commissionReversal > 0n) {
         reversed = await commission.reverseForOrder(
