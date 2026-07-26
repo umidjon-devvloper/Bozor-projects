@@ -6,6 +6,25 @@ const BATCH_SIZE = 100;
 const POLL_INTERVAL_MS = 500;
 
 /**
+ * After this many failures an event stops being fetched.
+ *
+ * Not a dead-letter collection: the row stays in the outbox with its `attempts` and
+ * `lastError`, which is where an operator would look for it anyway. What the cap buys is that
+ * a permanently undeliverable event — a payload no handler can parse, a handler that always
+ * throws — stops being retried forever at the head of the queue.
+ *
+ * Ten is high enough to ride out an outage of any consumer and low enough that a genuinely
+ * broken event is set aside within seconds rather than filling the log for a week.
+ *
+ * One cost worth knowing: set-aside events stay unpublished, so they remain in the partial
+ * index on `{ occurredAt }` and — being the oldest — sit at the head of every subsequent scan.
+ * A handful is free; a few hundred accumulated over months would make each drain read past
+ * them. The fix when that day comes is a `deadLetteredAt` field in the partial filter, which
+ * needs a migration and is not worth one today.
+ */
+const MAX_ATTEMPTS = 10;
+
+/**
  * Outbox relay (ADR-0012).
  *
  * Reads events committed by the API and hands them to the dispatcher. Delivery is
@@ -25,12 +44,13 @@ export function createOutboxRelay(logger: Logger, dispatcher: EventDispatcher) {
     if (!collection) return 0;
 
     const batch = await collection
-      .find({ publishedAt: null })
+      .find({ publishedAt: null, attempts: { $lt: MAX_ATTEMPTS } })
       .sort({ occurredAt: 1 })
       .limit(BATCH_SIZE)
       .toArray();
     if (batch.length === 0) return 0;
 
+    let published = 0;
     for (const event of batch) {
       try {
         await dispatcher.dispatch({
@@ -43,6 +63,7 @@ export function createOutboxRelay(logger: Logger, dispatcher: EventDispatcher) {
           occurredAt: event.occurredAt instanceof Date ? event.occurredAt : new Date(),
         });
         await collection.updateOne({ _id: event._id }, { $set: { publishedAt: new Date() } });
+        published += 1;
       } catch (error) {
         await collection.updateOne(
           { _id: event._id },
@@ -51,10 +72,24 @@ export function createOutboxRelay(logger: Logger, dispatcher: EventDispatcher) {
             $set: { lastError: error instanceof Error ? error.message : 'unknown' },
           },
         );
-        logger.error({ err: error, eventId: event.eventId }, 'failed to relay event');
+        const attempts = Number(event.attempts ?? 0) + 1;
+        logger.error(
+          { err: error, eventId: event.eventId, attempts },
+          attempts >= MAX_ATTEMPTS
+            ? 'event set aside after too many failed relay attempts'
+            : 'failed to relay event',
+        );
       }
     }
-    return batch.length;
+    /**
+     * The count is of events *published*, not events fetched.
+     *
+     * The caller sleeps only when this is zero, so returning the batch size meant a batch that
+     * failed entirely still looked like progress — and one undeliverable event, always first
+     * because the sort is oldest-first, kept the relay in a loop with no pause, hammering the
+     * database and writing an error line every iteration.
+     */
+    return published;
   }
 
   return {

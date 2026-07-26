@@ -55,7 +55,21 @@ export function createOrderTimersSweeper(redis: Redis, logger: Logger) {
       .collection<ReservationRow>('stock_reservations')
       .find({ holderId: orderId.toString(), status: 'ACTIVE' })
       .toArray();
+    /**
+     * Claim each reservation before releasing its stock — see the same reasoning in
+     * `reservationSweeper`. The reservation sweeper releases these very rows on its own clock,
+     * so both paths could decrement the same hold while only one changed its status, and the
+     * product would end up looking like it had stock nobody is holding.
+     */
+    const releasedAt = new Date();
     for (const reservation of held) {
+      const claimed = await db.collection('stock_reservations').updateOne(
+        { _id: reservation._id, status: 'ACTIVE' },
+        { $set: { status: 'RELEASED', releasedAt } },
+        { session },
+      );
+      if (claimed.modifiedCount !== 1) continue;
+
       await db
         .collection('products')
         .updateOne(
@@ -63,13 +77,6 @@ export function createOrderTimersSweeper(redis: Redis, logger: Logger) {
           { $inc: { reservedQtyMilli: reservation.qtyMilli.negate() } },
           { session },
         );
-    }
-    if (held.length > 0) {
-      await db.collection('stock_reservations').updateMany(
-        { _id: { $in: held.map((reservation) => reservation._id) }, status: 'ACTIVE' },
-        { $set: { status: 'RELEASED', releasedAt: new Date() } },
-        { session },
-      );
     }
   }
 

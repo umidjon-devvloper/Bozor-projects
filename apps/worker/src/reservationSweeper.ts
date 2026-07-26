@@ -42,9 +42,31 @@ export function createReservationSweeper(redis: Redis, logger: Logger) {
     if (expired.length === 0) return 0;
 
     const session = await mongoose.startSession();
+    let released = 0;
     try {
       await session.withTransaction(async () => {
+        released = 0;
         for (const reservation of expired) {
+          /**
+           * Claim the reservation before releasing its stock, not after.
+           *
+           * The rows were read outside this transaction, and an order expiring through
+           * `releaseStockFor` releases the same reservations. Decrementing first and updating
+           * the status afterwards — with the status filter only on the update — meant both
+           * paths could decrement the same reservation while only one of them changed its
+           * status. `reservedQtyMilli` would fall twice for one hold, the product would look
+           * like it had more stock than it does, and the bazaar would sell goods that are not
+           * there.
+           *
+           * The compare-and-set decides who owns the release; only the winner touches stock.
+           */
+          const claimed = await db.collection('stock_reservations').updateOne(
+            { _id: reservation._id, status: 'ACTIVE' },
+            { $set: { status: 'EXPIRED', releasedAt: now } },
+            { session },
+          );
+          if (claimed.modifiedCount !== 1) continue;
+
           await db
             .collection('products')
             .updateOne(
@@ -52,12 +74,8 @@ export function createReservationSweeper(redis: Redis, logger: Logger) {
               { $inc: { reservedQtyMilli: reservation.qtyMilli.negate() } },
               { session },
             );
+          released += 1;
         }
-        await db.collection('stock_reservations').updateMany(
-          { _id: { $in: expired.map((reservation) => reservation._id) }, status: 'ACTIVE' },
-          { $set: { status: 'EXPIRED', releasedAt: now } },
-          { session },
-        );
         // The quote that held them is retired in the same breath, so a buyer cannot return to
         // a stale offer whose stock has already gone back on sale.
         await db.collection('checkout_quotes').updateMany(
@@ -70,8 +88,8 @@ export function createReservationSweeper(redis: Redis, logger: Logger) {
       await session.endSession();
     }
 
-    logger.info({ count: expired.length }, 'expired stock reservations released');
-    return expired.length;
+    logger.info({ count: released, found: expired.length }, 'expired stock reservations released');
+    return released;
   }
 
   async function tick(): Promise<void> {
