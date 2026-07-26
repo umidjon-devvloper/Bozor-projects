@@ -43,6 +43,8 @@ export interface FanOutResult {
   considered: number;
   alerted: number;
   skipped: number;
+  /** Recipients whose delivery threw. Counted rather than thrown so the pass finishes. */
+  failed: number;
 }
 
 export function createFavouriteAlertService(ports: FavouriteAlertPorts) {
@@ -58,7 +60,7 @@ export function createFavouriteAlertService(ports: FavouriteAlertPorts) {
     async fanOutProduct(productId: string, eventId: string): Promise<FanOutResult> {
       const product = await ports.readProduct(productId);
       if (!product) {
-        return { productId, considered: 0, alerted: 0, skipped: 0 };
+        return { productId, considered: 0, alerted: 0, skipped: 0, failed: 0 };
       }
 
       const now = new Date();
@@ -66,6 +68,7 @@ export function createFavouriteAlertService(ports: FavouriteAlertPorts) {
       let considered = 0;
       let alerted = 0;
       let skipped = 0;
+      let failed = 0;
 
       for (;;) {
         const page = await favouriteRepository.pageFollowers({
@@ -114,15 +117,38 @@ export function createFavouriteAlertService(ports: FavouriteAlertPorts) {
           }
 
           for (const kind of decision.alerts) {
-            await ports.notify({
-              userId: favourite.userId,
-              kind,
-              product,
-              // Scoped to the favourite and the kind rather than to the event, so two
-              // different events that both warrant a restock alert still deduplicate.
-              dedupeKey: `favourite:${favourite.id}:${kind}:${now.toISOString().slice(0, 10)}`,
-            });
-            alerted += 1;
+            /**
+             * One recipient's failure must not end the pass.
+             *
+             * Without this, a single dead device token or a provider timeout throws out of the
+             * loop and everybody queued behind it hears nothing — tens of thousands of people
+             * on a popular product. It is worse than it first looks: the state has already
+             * advanced for the follower that failed, so a redelivery of the event skips them
+             * and stops at the same place again. A permanently bad token would block that
+             * product's alerts for good.
+             *
+             * The alert is lost for that one person, which is the trade the ordering above
+             * already accepts. It is recorded so the loss is visible rather than silent.
+             */
+            try {
+              await ports.notify({
+                userId: favourite.userId,
+                kind,
+                product,
+                // Scoped to the favourite and the kind rather than to the event, so two
+                // different events that both warrant a restock alert still deduplicate.
+                dedupeKey: `favourite:${favourite.id}:${kind}:${now.toISOString().slice(0, 10)}`,
+              });
+              alerted += 1;
+            } catch (error) {
+              failed += 1;
+              ports.log('favourite alert delivery failed', {
+                productId,
+                favouriteId: favourite.id,
+                kind,
+                error: error instanceof Error ? error.message : String(error),
+              });
+            }
           }
         }
 
@@ -137,8 +163,9 @@ export function createFavouriteAlertService(ports: FavouriteAlertPorts) {
         considered,
         alerted,
         skipped,
+        failed,
       });
-      return { productId, considered, alerted, skipped };
+      return { productId, considered, alerted, skipped, failed };
     },
 
     /**
@@ -154,7 +181,17 @@ export function createFavouriteAlertService(ports: FavouriteAlertPorts) {
       const productIds = await favouriteRepository.productIdsFollowedInShop(shopId);
       const results: FanOutResult[] = [];
       for (const productId of productIds) {
-        results.push(await this.fanOutProduct(productId, eventId));
+        // Same reasoning as the per-recipient catch: one product that cannot be read must not
+        // end a pass covering every followed product in a returning seller's stall.
+        try {
+          results.push(await this.fanOutProduct(productId, eventId));
+        } catch (error) {
+          ports.log('favourite alert fan-out failed for product', {
+            shopId,
+            productId,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
       }
       ports.log('favourite alert fan-out for shop complete', {
         shopId,

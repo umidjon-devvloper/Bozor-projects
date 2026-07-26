@@ -5,12 +5,17 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "scripts": {
-    "build": "tsc -b",
+    "build": "tsc -b tsconfig.build.json",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src",
-    "test": "vitest run --passWithNoTests"
+    "lint": "eslint src tests",
+    "test": "vitest run"
   },
   "dependencies": {
     "@bozorlar/domain": "workspace:*",
@@ -18,5 +23,8 @@
     "@bozorlar/money": "workspace:*",
     "@bozorlar/types": "workspace:*",
     "mongoose": "^8.7.0"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.2"
   }
 }

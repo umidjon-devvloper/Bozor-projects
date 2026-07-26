@@ -513,6 +513,10 @@ importers:
       mongoose:
         specifier: ^8.7.0
         version: 8.24.1
+    devDependencies:
+      vitest:
+        specifier: ^2.1.2
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.27.0)(terser@5.49.0)
 
   packages/ledger:
     dependencies:
